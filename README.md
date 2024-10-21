@@ -1,0 +1,1 @@
+# minda-rest-full-api
