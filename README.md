@@ -1,1 +1,1 @@
-# minda-rest-full-api
+# Minda Rest Full API
