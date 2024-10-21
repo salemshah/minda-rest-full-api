@@ -1,7 +1,7 @@
 # 🟢 Minda REST FULL API 
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Node.js](https://img.shields.io/badge/node.js-16.13.0-green.svg)
+![License](https://img.shields.io/badge/license-Private-green.svg)
+![Node.js](https://img.shields.io/badge/node.js-20.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-4.5.4-blue.svg)
 ![Express](https://img.shields.io/badge/Express-4.17.1-lightgrey.svg)
 ![Prisma](https://img.shields.io/badge/Prisma-5.20.0-brightgreen.svg)
@@ -123,3 +123,8 @@ Ensure you have the following installed on your machine:
 | `FRONTEND_URL_FORGOT_PASSWORD` | URL to redirect users for password reset. Example: `http://localhost:8000/api/parent/reset-password`. |
 | `FRONTEND_URL_VERIFY_EMAIL`  | URL to redirect users for email verification. Example: `http://localhost:8000/api/parent/verify-email`. |
 
+## Commit Message Guidelines
+
+All commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/) specification with a Jira ticket prefix.
+
+**Format:**
