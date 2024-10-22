@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+
+const { execSync } = require('child_process');
+
+try {
+  console.log('Running lint-staged...');
+  execSync('npx lint-staged', { stdio: 'inherit' });
+
+  console.log('Running Tests...');
+  execSync('npm run test', { stdio: 'inherit' });
+
+  console.log('All checks passed. Proceeding with commit.');
+} catch (error) {
+  console.error('Commit aborted due to failed hooks.');
+  process.exit(1);
+}
