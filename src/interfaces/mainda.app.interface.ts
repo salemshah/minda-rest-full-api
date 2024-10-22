@@ -7,14 +7,6 @@ export interface TokenPayload {
     lastName: string;
 }
 
-export interface ExcludeFields {
-    password: string,
-    verificationToken: string,
-    verificationTokenExpires: string,
-    resetPasswordToken: string,
-    resetPasswordExpires: string
-}
-
 export type SafeParent = Omit<Parent, 'password' | 'verificationToken' | 'verificationTokenExpires' | 'resetPasswordToken' | 'resetPasswordExpires'>;
 
 export type AuthResponse = {
