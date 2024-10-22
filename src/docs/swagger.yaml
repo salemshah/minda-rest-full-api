@@ -1,0 +1,647 @@
+openapi: 3.0.0
+info:
+  title: Minda REST API
+  version: 1.1.0
+  description: >
+    Minda API for parent registration and authentication using JWT.
+    Includes endpoints for parent registration, login, email verification, token management, and accessing a protected parent profile.
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+  - url: http://localhost:7000/api
+    description: Staging server
+
+paths:
+  /auth/parent-register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new parent
+      requestBody:
+        description: Parent registration details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Parent successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/parent-login:
+    post:
+      tags:
+        - Authentication
+      summary: Parent login
+      requestBody:
+        description: Parent login credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid login credentials
+                  value:
+                    error: "Invalid email or password."
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      requestBody:
+        description: Refresh token for obtaining a new access token
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout parent
+      requestBody:
+        description: Refresh token to invalidate
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /parent/verify-email:
+    post:
+      tags:
+        - Parent
+      summary: Verify parent's email
+      requestBody:
+        description: Email verification token
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailResponse'
+        '400':
+          description: Bad Request - Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /parent/resend-verification-email:
+    post:
+      tags:
+        - Parent
+      summary: Resend email verification link
+      requestBody:
+        description: Parent's email to resend verification link
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationEmailRequest'
+      responses:
+        '200':
+          description: Verification email resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendVerificationEmailResponse'
+        '400':
+          description: Bad Request - Email already verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /parent/profile:
+    get:
+      tags:
+        - Parent
+      summary: Get parent profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Parent profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorizedAccess:
+                  summary: Unauthorized access example
+                  value:
+                    error: "Unauthorized access. Please provide a valid authentication token."
+
+  /parent/update-email:
+    put:
+      tags:
+        - Parent
+      summary: Update parent's email address
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: New email address for the parent
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailRequest'
+      responses:
+        '200':
+          description: Email updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateEmailResponse'
+        '400':
+          description: Bad Request - Invalid input or email already verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /parent/update-password:
+    put:
+      tags:
+        - Parent
+      summary: Update parent's password
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Current and new password for the parent
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePasswordResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /parent/complete-registration:
+    put:
+      tags:
+        - Parent
+      summary: Complete parent registration
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Additional registration details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRegistrationRequest'
+      responses:
+        '200':
+          description: Registration completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteRegistrationResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /parent/remove-account:
+    delete:
+      tags:
+        - Parent
+      summary: Remove (deactivate) parent's account
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Password for account deactivation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAccountRequest'
+      responses:
+        '200':
+          description: Account deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteAccountResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: salemshahdev@gmail.com
+        firstName:
+          type: string
+          example: Salem
+        lastName:
+          type: string
+          example: Shah
+        password:
+          type: string
+          format: password
+          example: 123456
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Parent registered successfully. Please check your email to verify your account."
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: salemshahdev@gmail.com
+        password:
+          type: string
+          format: password
+          example: 123456
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login successful"
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        parent:
+          $ref: '#/components/schemas/UserProfile'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "newAccessToken..."
+        message:
+          type: string
+          example: "Token refreshed successfully"
+
+    LogoutRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Logged out successfully"
+
+    VerifyEmailRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          example: "verification-token-from-email"
+
+    VerifyEmailResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Email verified successfully"
+
+    ResendVerificationEmailRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: salemshahdev@gmail.com
+
+    ResendVerificationEmailResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Verification email resent successfully"
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: salemshahdev@gmail.com
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        status:
+          type: boolean
+          example: true
+        birthDate:
+          type: string
+          format: date-time
+          example: "1990-01-01T00:00:00.000Z"
+        phoneNumber:
+          type: string
+          example: "1234567890"
+        addressPostal:
+          type: string
+          example: "12345"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T12:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-02T12:00:00.000Z"
+
+    UpdateEmailRequest:
+      type: object
+      required:
+        - newEmail
+      properties:
+        newEmail:
+          type: string
+          format: email
+          example: newemail@example.com
+
+    UpdateEmailResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Email updated successfully. Please verify your new email."
+        parent:
+          $ref: '#/components/schemas/UserProfile'
+
+    UpdatePasswordRequest:
+      type: object
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+          format: password
+          example: oldPass123
+        newPassword:
+          type: string
+          format: password
+          example: newPass456
+
+    UpdatePasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Password updated successfully"
+
+    CompleteRegistrationRequest:
+      type: object
+      required:
+        - birthDate
+        - phoneNumber
+        - addressPostal
+      properties:
+        birthDate:
+          type: string
+          format: date-time
+          example: "1991-11-15T00:00:00.000Z"
+        phoneNumber:
+          type: string
+          example: "0788776655"
+        addressPostal:
+          type: string
+          example: "80000"
+
+    CompleteRegistrationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Registration completed successfully"
+        parent:
+          $ref: '#/components/schemas/UserProfile'
+
+    DeleteAccountRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          format: password
+          example: 123456
+
+    DeleteAccountResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Account deactivated successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message detailing what went wrong."
