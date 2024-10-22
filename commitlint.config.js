@@ -13,6 +13,6 @@ module.exports = {
             'always',
             ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'revert'],
         ],
-        'header-max-length': [2, 'always', 72],
+        'header-max-length': [2, 'always', 100],
     },
 };
