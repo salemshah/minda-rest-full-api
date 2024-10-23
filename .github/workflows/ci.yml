@@ -12,7 +12,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:15
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -42,11 +44,11 @@ jobs:
         run: npm ci
 
       - name: Wait for PostgreSQL to be ready
-        uses: jakejarvis/wait-for-it@v2.1.0
+        uses: manusa/actions-await@v2.0.0
         with:
+          timeout: 30
           host: localhost
           port: 5432
-          timeout: 30
 
       - name: Set up Prisma
         run: npx prisma generate
@@ -54,8 +56,11 @@ jobs:
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
 
+      - name: Run commitlint
+        run: npx commitlint --from=origin/main --to=HEAD
+
       - name: Run tests
-        run: npm test:ci
+        run: npm run test:ci
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 

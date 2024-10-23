@@ -9,6 +9,9 @@
 # production
 /build
 
+#eslint
+.eslintcache
+
 # misc
 .env
 .DS_Store

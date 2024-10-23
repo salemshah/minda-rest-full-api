@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 
-export const notFoundHandler = (req: Request, res: Response, next: NextFunction) => {
-    res.status(404).json({
-        message: 'Resource not found',
-    });
+export const notFoundHandler = (req: Request, res: Response) => {
+  res.status(404).json({
+    message: 'Resource not found',
+  });
 };

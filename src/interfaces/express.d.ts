@@ -1,9 +1,10 @@
-import * as express from 'express';
+import { Child, Parent } from '@prisma/client';
 
 declare global {
-    namespace Express {
-        interface Request {
-            user: any;
-        }
+  namespace Express {
+    interface Request {
+      parent: Parent;
+      child: Child;
     }
+  }
 }
