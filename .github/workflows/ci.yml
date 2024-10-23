@@ -14,19 +14,19 @@ jobs: # Define the jobs to be run in the workflow.
       postgres: # Set up a PostgreSQL service.
         image: postgres:16  # Use the official PostgreSQL Docker image
         env: # Environment variables for the PostgreSQL service.
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: postgres  # Username for PostgreSQL.
+          POSTGRES_PASSWORD: postgres  # Password for PostgreSQL.
+          POSTGRES_DB: test_db  # Database name.
         ports: # Map the container's port to the host.
           - 5432:5432  # PostgreSQL listens on port 5432.
         options: >-
-          --health-cmd="pg_isready -U ${{ secrets.POSTGRES_USER }}"
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
     env: # Define environment variables for the build job.
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}  # Connection string for the PostgreSQL database.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?schema=public  # Connection string for the PostgreSQL database.
 
     steps: # Define the steps to be run in the "build" job.
       - name: Checkout repository  # Step to check out the repository code.
