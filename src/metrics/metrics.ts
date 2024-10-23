@@ -6,11 +6,11 @@ export const promRegistry = new client.Registry();
 
 // Enable collection of default metrics
 client.collectDefaultMetrics({
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   app: 'Minda',
   prefix: 'app_', // Optional prefix for all default metrics
-  timeout: 5000,  // Collect metrics every 5 seconds
+  timeout: 5000, // Collect metrics every 5 seconds
   register: promRegistry,
 });
 
@@ -19,7 +19,7 @@ export const httpRequestDurationHistogram = new client.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.1, 0.5, 1, 1.5, 2, 5],  // Buckets for response time from 0.1s to 5s
+  buckets: [0.1, 0.5, 1, 1.5, 2, 5], // Buckets for response time from 0.1s to 5s
   registers: [promRegistry], // Register this metric
 });
 
@@ -46,7 +46,11 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Middleware function to track HTTP requests
-export function trackHttpRequests(req: Request, res: Response, next: NextFunction) {
+export function trackHttpRequests(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const end = httpRequestDurationHistogram.startTimer({
     method: req.method,
     route: req.route ? req.route.path : 'unknown',

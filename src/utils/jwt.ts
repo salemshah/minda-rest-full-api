@@ -10,24 +10,24 @@ const refreshTokenExpiresIn = config.jwt.refreshTokenExpiresIn;
 
 // Generate Access Token
 export const generateAccessToken = (payload: object): string => {
-    return jwt.sign(payload, accessTokenSecret, {
-        expiresIn: accessTokenExpiresIn,
-    });
+  return jwt.sign(payload, accessTokenSecret, {
+    expiresIn: accessTokenExpiresIn,
+  });
 };
 
 // Generate Refresh Token
 export const generateRefreshToken = (payload: object): string => {
-    return jwt.sign(payload, refreshTokenSecret, {
-        expiresIn: refreshTokenExpiresIn,
-    });
+  return jwt.sign(payload, refreshTokenSecret, {
+    expiresIn: refreshTokenExpiresIn,
+  });
 };
 
 // Verify Access Token
 export const verifyAccessToken = (token: string): JwtPayload | string => {
-    return jwt.verify(token, accessTokenSecret);
+  return jwt.verify(token, accessTokenSecret);
 };
 
 // Verify Refresh Token
 export const verifyRefreshToken = (token: string): JwtPayload | string => {
-    return jwt.verify(token, refreshTokenSecret);
+  return jwt.verify(token, refreshTokenSecret);
 };

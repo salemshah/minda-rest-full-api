@@ -41,6 +41,9 @@ jobs: # Define the jobs to be run in the workflow.
       - name: Install dependencies  # Step to install npm dependencies.
         run: npm ci  # Install dependencies using `npm ci`, which is faster and more consistent for CI environments.
 
+      - name: Run Commitlint
+        run: npx commitlint --from=origin/main --to=HEAD
+
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..30}; do

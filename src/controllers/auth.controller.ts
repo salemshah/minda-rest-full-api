@@ -25,12 +25,10 @@ export class AuthController {
       data.email,
       data.password
     );
-    res
-      .status(201)
-      .json({
-        message:
-          'Parent registered successfully. Please check your email to verify your account.',
-      });
+    res.status(201).json({
+      message:
+        'Parent registered successfully. Please check your email to verify your account.',
+    });
   });
 
   static parentLogin = asyncWrapper(async (req: Request, res: Response) => {
