@@ -32,7 +32,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history for all branches and tags
+          fetch-depth: 0  # Ensure full Git history is fetched
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -44,11 +44,11 @@ jobs:
         run: npm ci
 
       - name: Wait for PostgreSQL to be ready
-        uses: manusa/actions-await@v2.0.0
+        uses: maxkomarychev/wait-action@v1.1.0
         with:
-          timeout: 30
-          host: localhost
-          port: 5432
+          hosts: localhost:5432
+          timeout: 30  # Timeout in seconds
+          check-interval: 1  # Interval between checks in seconds
 
       - name: Set up Prisma
         run: npx prisma generate
