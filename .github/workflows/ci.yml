@@ -14,19 +14,19 @@ jobs: # Define the jobs to be run in the workflow.
       postgres: # Set up a PostgreSQL service.
         image: postgres:16  # Use the official PostgreSQL Docker image
         env: # Environment variables for the PostgreSQL service.
-          POSTGRES_USER: postgres  # Username for PostgreSQL.
-          POSTGRES_PASSWORD: postgres  # Password for PostgreSQL.
-          POSTGRES_DB: test_db  # Database name.
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         ports: # Map the container's port to the host.
           - 5432:5432  # PostgreSQL listens on port 5432.
         options: >-
-          --health-cmd="pg_isready -U postgres"
+          --health-cmd="pg_isready -U ${{ secrets.POSTGRES_USER }}"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
     env: # Define environment variables for the build job.
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?schema=public  # Connection string for the PostgreSQL database.
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}  # Connection string for the PostgreSQL database.
 
     steps: # Define the steps to be run in the "build" job.
       - name: Checkout repository  # Step to check out the repository code.
@@ -35,7 +35,7 @@ jobs: # Define the jobs to be run in the workflow.
       - name: Set up Node.js  # Step to set up Node.js environment.
         uses: actions/setup-node@v3  # Use the official action to set up Node.js.
         with:
-          node-version: '22'
+          node-version: '20'  # Use a supported Node.js LTS version
           cache: 'npm'
 
       - name: Install dependencies  # Step to install npm dependencies.
@@ -54,10 +54,45 @@ jobs: # Define the jobs to be run in the workflow.
           done
 
       - name: Set up Prisma  # Step to set up Prisma (an ORM).
-        run: npx prisma generate  # Run the command to generate Prisma client code based on the schema.
+        run: |
+          if npm run prisma:generate; then
+            echo "Prisma client generated successfully."
+          else
+            echo "Failed to generate Prisma client."
+            exit 1
+          fi
 
       - name: Run Prisma migrations  # Step to apply database migrations using Prisma.
-        run: npx prisma migrate deploy  # Deploy any pending migrations to the PostgreSQL database.
+        run: |
+          if npm run prisma:migrate:deploy; then
+            echo "Prisma migrations deployed successfully."
+          else
+            echo "Failed to deploy Prisma migrations."
+            exit 1
+          fi
+
+      - name: Validate Prisma Schema  # Step to validate the Prisma schema.
+        run: |
+          if npx prisma validate; then
+            echo "Prisma schema is valid."
+          else
+            echo "Prisma schema validation failed."
+            exit 1
+          fi
+
+      - name: Check Prisma Database Connection  # Step to check Prisma's ability to connect to PostgreSQL.
+        run: |
+          if npx prisma db pull; then
+            echo "Prisma successfully connected to PostgreSQL."
+          else
+            echo "Failed to connect Prisma to PostgreSQL."
+            exit 1
+          fi
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Run Linting  # Step to run ESLint for code quality.
+        run: npm run lint:ci
 
       - name: Run commitlint  # Step to run commitlint to enforce commit message conventions.
         run: npx commitlint --from=origin/main --to=HEAD  # Lint commits from the main branch to the current head to ensure they follow commit standards.
