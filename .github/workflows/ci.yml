@@ -19,11 +19,11 @@ jobs: # Define the jobs to be run in the workflow.
           POSTGRES_DB: test_db  # Database name.
         ports: # Map the container's port to the host.
           - 5432:5432  # PostgreSQL listens on port 5432.
-        options: >-  # Additional options for PostgreSQL container.
-          --health-cmd="pg_isready -U postgres"  # Command to check if PostgreSQL is ready.
-          --health-interval=10s  # Check every 10 seconds.
-          --health-timeout=5s  # Timeout for each check is 5 seconds.
-          --health-retries=5  # Retry up to 5 times if PostgreSQL is not ready.
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     env: # Define environment variables for the build job.
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?schema=public  # Connection string for the PostgreSQL database.
