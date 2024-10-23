@@ -12,7 +12,7 @@ jobs: # Define the jobs to be run in the workflow.
 
     services: # Define any services needed by the job (like databases).
       postgres: # Set up a PostgreSQL service.
-        image: postgres:11.6-alpine  # Use the official PostgreSQL Docker image
+        image: postgres:16  # Use the official PostgreSQL Docker image
         env: # Environment variables for the PostgreSQL service.
           POSTGRES_USER: postgres  # Username for PostgreSQL.
           POSTGRES_PASSWORD: postgres  # Password for PostgreSQL.
@@ -35,18 +35,23 @@ jobs: # Define the jobs to be run in the workflow.
       - name: Set up Node.js  # Step to set up Node.js environment.
         uses: actions/setup-node@v3  # Use the official action to set up Node.js.
         with:
-          node-version: '22'  # Specify the version of Node.js to use (version 22).
-          cache: 'npm'  # Cache npm dependencies to speed up subsequent builds.
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies  # Step to install npm dependencies.
         run: npm ci  # Install dependencies using `npm ci`, which is faster and more consistent for CI environments.
 
-      #      - name: Wait for PostgreSQL to be ready  # Step to wait until PostgreSQL is ready before proceeding.
-      #        uses: maxkomarychev/wait-action@v1.1.0  # Use a wait action to pause until PostgreSQL is ready.
-      #        with:
-      #          hosts: localhost:5432  # The PostgreSQL service should be running on this host and port.
-      #          timeout: 30  # Wait for up to 30 seconds for PostgreSQL to be ready.
-      #          check-interval: 1  # Check the PostgreSQL status every 1 second.
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432; then
+              echo "PostgreSQL is ready"
+              break
+            else
+              echo "Waiting for PostgreSQL..."
+              sleep 1
+            fi
+          done
 
       - name: Set up Prisma  # Step to set up Prisma (an ORM).
         run: npx prisma generate  # Run the command to generate Prisma client code based on the schema.
