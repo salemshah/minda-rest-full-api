@@ -1,45 +1,45 @@
-name: CI  # The name of the workflow, which is "CI" (Continuous Integration).
+name: CI
 
-on: # Specifies when the workflow should be triggered.
-  push: # Trigger the workflow when code is pushed to the repository.
-    branches: [ main ]  # The workflow will run only if the push happens to the "main" branch.
-  pull_request: # Trigger the workflow when a pull request is opened or updated.
-    branches: [ main ]  # The workflow will run for pull requests targeting the "main" branch.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-jobs: # Define the jobs to be run in the workflow.
-  build: # The name of the job is "build".
-    runs-on: ubuntu-latest  # This job will run on the latest Ubuntu virtual machine.
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    services: # Define any services needed by the job (like databases).
-      postgres: # Set up a PostgreSQL service.
-        image: postgres:16  # Use the official PostgreSQL Docker image
-        env: # Environment variables for the PostgreSQL service.
-          POSTGRES_USER: postgres  # Username for PostgreSQL.
-          POSTGRES_PASSWORD: postgres  # Password for PostgreSQL.
-          POSTGRES_DB: test_db  # Database name.
-        ports: # Map the container's port to the host.
-          - 5432:5432  # PostgreSQL listens on port 5432.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
-    env: # Define environment variables for the build job.
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?schema=public  # Connection string for the PostgreSQL database.
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?schema=public
 
-    steps: # Define the steps to be run in the "build" job.
-      - name: Checkout repository  # Step to check out the repository code.
-        uses: actions/checkout@v3  # Use the official GitHub action to check out the code.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Set up Node.js  # Step to set up Node.js environment.
-        uses: actions/setup-node@v3  # Use the official action to set up Node.js.
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: '20'  # Use a supported Node.js LTS version
+          node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies  # Step to install npm dependencies.
-        run: npm ci  # Install dependencies using `npm ci`, which is faster and more consistent for CI environments.
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run Commitlint
         run: npx commitlint --from=origin/main --to=HEAD
@@ -56,7 +56,7 @@ jobs: # Define the jobs to be run in the workflow.
             fi
           done
 
-      - name: Set up Prisma  # Step to set up Prisma (an ORM).
+      - name: Set up Prisma
         run: |
           if npm run prisma:generate; then
             echo "Prisma client generated successfully."
@@ -65,7 +65,7 @@ jobs: # Define the jobs to be run in the workflow.
             exit 1
           fi
 
-      - name: Run Prisma migrations  # Step to apply database migrations using Prisma.
+      - name: Run Prisma migrations
         run: |
           if npm run prisma:migrate:deploy; then
             echo "Prisma migrations deployed successfully."
@@ -74,7 +74,7 @@ jobs: # Define the jobs to be run in the workflow.
             exit 1
           fi
 
-      - name: Validate Prisma Schema  # Step to validate the Prisma schema.
+      - name: Validate Prisma Schema
         run: |
           if npx prisma validate; then
             echo "Prisma schema is valid."
@@ -83,7 +83,7 @@ jobs: # Define the jobs to be run in the workflow.
             exit 1
           fi
 
-      - name: Check Prisma Database Connection  # Step to check Prisma's ability to connect to PostgreSQL.
+      - name: Check Prisma Database Connection
         run: |
           if npx prisma db pull; then
             echo "Prisma successfully connected to PostgreSQL."
@@ -94,20 +94,20 @@ jobs: # Define the jobs to be run in the workflow.
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
-      - name: Run Linting  # Step to run ESLint for code quality.
+      - name: Run Linting
         run: npm run lint:ci
 
-      - name: Run commitlint  # Step to run commitlint to enforce commit message conventions.
-        run: npx commitlint --from=origin/main --to=HEAD  # Lint commits from the main branch to the current head to ensure they follow commit standards.
+      - name: Run commitlint
+        run: npx commitlint --from=origin/main --to=HEAD
 
-      - name: Run tests  # Step to run tests for the application.
-        run: npm run test:ci  # Run the CI-specific test script.
+      - name: Run tests
+        run: npm run test:ci
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}  # Ensure the test environment uses the correct PostgreSQL database URL.
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
-      - name: Upload coverage report  # Step to upload the test coverage report.
-        if: always() && success()  # Run this step only if the job was successful.
-        uses: actions/upload-artifact@v3  # Use the official GitHub action to upload artifacts.
+      - name: Upload coverage report
+        if: always() && success()
+        uses: actions/upload-artifact@v3
         with:
-          name: coverage-report  # Name the uploaded artifact "coverage-report".
-          path: coverage/  # Specify the path to the coverage report files.
+          name: coverage-report
+          path: coverage/
