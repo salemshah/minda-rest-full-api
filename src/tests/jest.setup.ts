@@ -13,12 +13,13 @@ jest.mock('../utils/sendEmail', () => ({
   sendEmail: jest.fn().mockResolvedValue(true),
 }));
 
-// jest.mock('../utils/logger', () => ({
-//     info: jest.fn(),
-//     error: jest.fn(),
-//     warn: jest.fn(),
-//     debug: jest.fn(),
-// }));
+jest.mock('../utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+}));
+
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
@@ -33,7 +34,6 @@ const runMigrations = () => {
 
 let app: Application;
 
-// Before all tests, run migrations, connect to the database, and initialize the app
 beforeAll(async () => {
   runMigrations();
   await prisma.$connect();
@@ -42,12 +42,10 @@ beforeAll(async () => {
   app = await initializeApp();
 });
 
-// After all tests, disconnect from the database
 afterAll(async () => {
   await prisma.$disconnect();
 });
 
-// After each test, reset mocks to ensure they don't interfere with other tests
 afterEach(() => {
   jest.clearAllMocks();
 });
