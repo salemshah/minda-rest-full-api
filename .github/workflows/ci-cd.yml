@@ -147,7 +147,7 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/home/${{ secrets.SERVER_USER }}/minda-rest-full-api"
         run: |
-          scp -o StrictHostKeyChecking=no deployment-files/docker-compose.yml ${{ env.SERVER_USER }}@${{ env.SERVER_IP }}:${{ env.SERVER_DIR }}/docker-compose.yml
+          scp -o StrictHostKeyChecking=no deployment-files/docker-compose.yml root@vps99465:${{ env.SERVER_DIR }}/docker-compose.yml
 
       # Copy Nginx config to Server
       - name: Copy Nginx config to Server
