@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: salemshah/minda-rest-full-api:latest
     env_file:
       - .env.prod
     ports:
