@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository to access docker-compose.yml and Nginx config
+      # Step 1: Checkout the repository (current commit)
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -133,19 +133,27 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: docker/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/minda-rest-full-api:latest
 
-      # Step 4: Copy docker-compose.yml to Server
+      # Step 4: Checkout the main branch to get docker-compose.yml and Nginx config
+      - name: Checkout main branch for deployment files
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          path: deployment-files  # Checkout into a separate directory
+
+      # Step 5: Copy docker-compose.yml to Server from main branch
       - name: Copy docker-compose.yml to Server
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_IP: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/home/${{ secrets.SERVER_USER }}/minda-rest-full-api"
         run: |
-          scp -i ${{ secrets.SERVER_SSH_KEY }} -o StrictHostKeyChecking=no docker-compose.yml ${{ env.SERVER_USER }}@${{ env.SERVER_IP }}:${{ env.SERVER_DIR }}/docker-compose.yml
+          scp -i ${{ secrets.SERVER_SSH_KEY }} -o StrictHostKeyChecking=no deployment-files/docker-compose.yml ${{ env.SERVER_USER }}@${{ env.SERVER_IP }}:${{ env.SERVER_DIR }}/docker-compose.yml
 
-      # Step 5: Copy Nginx config to Server
+      # Step 6: Copy Nginx config to Server from main branch
       - name: Copy Nginx config to Server
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
@@ -153,10 +161,10 @@ jobs:
           NGINX_CONF_DIR: "/etc/nginx/conf.d"          # Updated to match docker-compose volumes
           NGINX_ENABLED_DIR: "/etc/nginx/sites-enabled"
         run: |
-          scp -i ${{ secrets.SERVER_SSH_KEY }} -o StrictHostKeyChecking=no nginx/yourapp.conf ${{ env.SERVER_USER }}@${{ env.SERVER_IP }}:/tmp/yourapp.conf
+          scp -i ${{ secrets.SERVER_SSH_KEY }} -o StrictHostKeyChecking=no deployment-files/nginx/yourapp.conf ${{ env.SERVER_USER }}@${{ env.SERVER_IP }}:/tmp/yourapp.conf
           ssh -i ${{ secrets.SERVER_SSH_KEY }} -o StrictHostKeyChecking=no ${{ env.SERVER_USER }}@${{ env.SERVER_IP }} "sudo cp /tmp/yourapp.conf ${{ env.NGINX_CONF_DIR }}/yourapp.conf && sudo ln -sf ${{ env.NGINX_CONF_DIR }}/yourapp.conf ${{ env.NGINX_ENABLED_DIR }}/yourapp.conf"
 
-      # Step 6: Deploy Containers and Restart Nginx
+      # Step 7: Deploy Containers and Restart Nginx
       - name: Deploy Containers and Restart Nginx
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
@@ -171,8 +179,7 @@ jobs:
             sudo nginx -t && sudo systemctl reload nginx
           EOF
 
-      # Step 7: (Optional) Initialize Let's Encrypt Certificates
-      # This step is optional and only needed during the initial deployment
+      # Step 8: op: Initialize Let's Encrypt Certificates
       - name: Initialize Let's Encrypt Certificates
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
