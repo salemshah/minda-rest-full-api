@@ -140,12 +140,15 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
-      # Ensure Deployment Directory Exists on Server
-      - name: Ensure Deployment Directory Exists on Server
+      # Create .env.prod on Server
+      - name: Create .env.prod and .env on Server
         env:
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo '${{ vars.ENV_PROD_FILE  }}' > ${{ env.SERVER_DIR }}/.env.prod"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo '${{ vars.ENV_PROD_FILE  }}' > ${{ env.SERVER_DIR }}/.env"
+      
 
       # Copy docker-compose.prod.yml to Server
       - name: Copy docker-compose.prod.yml to Server
@@ -160,24 +163,20 @@ jobs:
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}/nginx/conf.d"
-          scp -o StrictHostKeyChecking=no nginx/conf.d/minda-app.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/nginx/conf.d/minda-app.conf
+          scp -o StrictHostKeyChecking=no nginx/conf.d/default.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/nginx/conf.d/default.conf
 
 
-        # Deploy Containers and Restart Nginx
-      - name: Deploy Containers and Restart Nginx
+      - name: Deploy Containers without Certbot
         env:
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-            cd ${{ env.SERVER_DIR }}
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
-            sudo nginx -t && sudo systemctl reload nginx
-          EOF      
+          cd ${{ env.SERVER_DIR }}
+          docker compose -f docker-compose.prod.yml up -d app db nginx
+          EOF
+      #          docker compose exec nginx nginx -s reload
 
 
-      # Initialize Let's Encrypt Certificates
       - name: Initialize Let's Encrypt Certificates
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
@@ -185,8 +184,40 @@ jobs:
           DOMAIN_NAME: "minda-app.duckdns.org"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-            cd ${{ env.SERVER_DIR }}
-            docker compose -f docker-compose.prod.yml run certbot certonly --webroot --webroot-path=/usr/share/nginx/html -d ${{ env.DOMAIN_NAME }} --email salemshahdev@gmail.com --agree-tos --no-eff-email
-            docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+          cd ${{ env.SERVER_DIR }}
+          sudo apt-get update && sudo apt-get upgrade -y
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans
+          docker compose -f docker-compose.prod.yml run --rm certbot certonly \
+          --webroot \
+          --webroot-path /var/www/certbot/ \
+          --email salemshahdev@gmail.com \
+          --agree-tos \
+          --non-interactive \
+          --dry-run \
+          -d minda-app.duckdns.org
+          docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
           EOF
+
+
+      - name: Wait for Nginx to be Healthy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          cd ${{ env.SERVER_DIR }}
+          while [ "$(docker compose -f docker-compose.prod.yml ps -q nginx | xargs docker inspect -f '{{.State.Health.Status}}')" != "healthy" ]; do
+            echo "Waiting for Nginx to become healthy..."
+            sleep 5
+          done
+          echo "Nginx is healthy."
+          EOF
+
+      - name: Deploy Certbot Service for Renewals
+        env:
+          SERVER_DIR: "/root/minda-rest-full-api"
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          cd ${{ env.SERVER_DIR }}
+          docker compose -f docker-compose.prod.yml up -d certbot
+          EOF
+
 
