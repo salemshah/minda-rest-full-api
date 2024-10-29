@@ -147,7 +147,7 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
-          scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:${{ env.SERVER_DIR }}/docker-compose.prod.yml
+          scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/docker-compose.prod.yml
 
       # Copy Nginx config to Server
       - name: Copy Nginx config to Server
@@ -156,8 +156,8 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}/nginx/conf.d"
-          scp -o StrictHostKeyChecking=no nginx/conf.d/minda-app.conf ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:${{ env.SERVER_DIR }}/nginx/conf.d/minda-app.conf
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}/nginx/conf.d"
+          scp -o StrictHostKeyChecking=no nginx/conf.d/minda-app.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/nginx/conf.d/minda-app.conf
 
 
         # Deploy Containers and Restart Nginx
@@ -167,7 +167,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
             cd ${{ env.SERVER_DIR }}
             docker compose -f docker-compose.prod.yml down
             docker compose -f docker-compose.prod.yml pull
@@ -185,7 +185,7 @@ jobs:
           SERVER_DIR: "/root/minda-rest-full-api"
           DOMAIN_NAME: "minda-app.duckdns.org"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
             cd ${{ env.SERVER_DIR }}
             docker compose -f docker-compose.prod.yml run certbot certonly --webroot --webroot-path=/usr/share/nginx/html -d ${{ env.DOMAIN_NAME }} --email salemshahdev@gmail.com --agree-tos --no-eff-email
             docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
