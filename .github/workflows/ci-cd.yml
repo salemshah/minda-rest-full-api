@@ -140,11 +140,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
+      # Ensure Deployment Directory Exists on Server
+      - name: Ensure Deployment Directory Exists on Server
+        env:
+          SERVER_DIR: "/root/minda-rest-full-api"
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}"
+
       # Copy docker-compose.prod.yml to Server
       - name: Copy docker-compose.prod.yml to Server
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_IP: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/docker-compose.prod.yml
@@ -152,8 +157,6 @@ jobs:
       # Copy Nginx config to Server
       - name: Copy Nginx config to Server
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}/nginx/conf.d"
@@ -163,8 +166,6 @@ jobs:
         # Deploy Containers and Restart Nginx
       - name: Deploy Containers and Restart Nginx
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
@@ -180,8 +181,6 @@ jobs:
       - name: Initialize Let's Encrypt Certificates
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/root/minda-rest-full-api"
           DOMAIN_NAME: "minda-app.duckdns.org"
         run: |
