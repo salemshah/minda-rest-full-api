@@ -115,17 +115,17 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
+  
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+  
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
+  
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -133,32 +133,28 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/minda-rest-full-api:latest
-
-      # Start the ssh-agent and add the private key
-      - name: Start ssh-agent
+  
+      - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
-
-      # Copy docker-compose.yml to Server
+  
+      - name: Debug Environment Variables
+        run: |
+          echo "SERVER_USER: ${{ secrets.SERVER_USER }}"
+          echo "SERVER_HOST: ${{ secrets.SERVER_HOST }}"
+  
+      - name: Check Hostname Resolution
+        run: |
+          ping -c 4 ${{ secrets.SERVER_HOST }}
+  
       - name: Copy docker-compose.yml to Server
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_IP: ${{ secrets.SERVER_HOST }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_DIR: "/home/${{ secrets.SERVER_USER }}/minda-rest-full-api"
         run: |
-          scp -o StrictHostKeyChecking=no deployment-files/docker-compose.yml root@vps99465:${{ env.SERVER_DIR }}/docker-compose.yml
-
-      # Copy Nginx config to Server
-      - name: Copy Nginx config to Server
-        env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_IP: ${{ secrets.SERVER_HOST }}
-          NGINX_CONF_DIR: "/etc/nginx/conf.d"
-          NGINX_ENABLED_DIR: "/etc/nginx/sites-enabled"
-        run: |
-          scp -o StrictHostKeyChecking=no deployment-files/nginx/yourapp.conf ${{ env.SERVER_USER }}@${{ env.SERVER_IP }}:/tmp/yourapp.conf
-          ssh -o StrictHostKeyChecking=no ${{ env.SERVER_USER }}@${{ env.SERVER_IP }} "sudo cp /tmp/yourapp.conf ${{ env.NGINX_CONF_DIR }}/yourapp.conf && sudo ln -sf ${{ env.NGINX_CONF_DIR }}/yourapp.conf ${{ env.NGINX_ENABLED_DIR }}/yourapp.conf"
+          scp -o StrictHostKeyChecking=no deployment-files/docker-compose.yml ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:${{ env.SERVER_DIR }}/docker-compose.yml
 
       # Deploy Containers and Restart Nginx
       - name: Deploy Containers and Restart Nginx
