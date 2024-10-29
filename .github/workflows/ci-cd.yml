@@ -142,7 +142,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: main
-          path: deployment-files  # Checkout into a separate directory
 
       # Step 5: Copy docker-compose.yml to Server from main branch
       - name: Copy docker-compose.yml to Server
