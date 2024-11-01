@@ -27,9 +27,9 @@ export default function expressLoader(app: Application): void {
   // API Routes
   app.use('/api', routes);
 
-  app.get('/test-app', (req, res) => {
-    res.send({
-      message: 'Success message, APP is ok',
+  app.get('/health', (req, res) => {
+    res.json({
+      message: 'Success message',
     });
   });
 }
