@@ -1,5 +1,8 @@
 name: CI/CD Pipeline
 
+env:
+  SERVER_DIR: "/root/minda-rest-full-api"
+
 on:
   push:
     branches: [ main ]
@@ -142,8 +145,6 @@ jobs:
 
       # Create .env.prod on Server
       - name: Create .env.prod and .env on Server
-        env:
-          SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}"
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo '${{ vars.ENV_PROD_FILE  }}' > ${{ env.SERVER_DIR }}/.env"
@@ -151,23 +152,17 @@ jobs:
 
       # Copy docker-compose.prod.yml to Server
       - name: Copy docker-compose.prod.yml to Server
-        env:
-          SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/docker-compose.prod.yml
 
       # Copy Nginx config to Server
       - name: Copy Nginx config to Server
-        env:
-          SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}/nginx/conf.d"
           scp -o StrictHostKeyChecking=no nginx/conf.d/default.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/nginx/conf.d/default.conf
 
 
       - name: Deploy Containers without Certbot
-        env:
-          SERVER_DIR: "/root/minda-rest-full-api"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
           cd ${{ env.SERVER_DIR }}
@@ -178,8 +173,6 @@ jobs:
 
 #      - name: Initialize Let's Encrypt Certificates
 #        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-#        env:
-#          SERVER_DIR: "/root/minda-rest-full-api"
 #          DOMAIN_NAME: "minda-app.duckdns.org"
 #        run: |
 #          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
@@ -211,8 +204,6 @@ jobs:
 #          EOF
 
 #      - name: Deploy Certbot Service for Renewals
-#        env:
-#          SERVER_DIR: "/root/minda-rest-full-api"
 #        run: |
 #          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
 #          cd ${{ env.SERVER_DIR }}
