@@ -6,8 +6,6 @@ env:
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
@@ -141,10 +139,10 @@ jobs:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
       # Create .env.prod on Server
-      - name: Create .env.prod and .env on Server
+      - name: Create .env on Server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo '${{ vars.ENV_PROD_FILE  }}' > ${{ env.SERVER_DIR }}/.env"
+          echo "${{ vars.ENV_PROD_FILE }}" | tr -d '\r' | ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cat > ${{ env.SERVER_DIR }}/.env"
       
 
       # Copy docker-compose.prod.yml to Server
