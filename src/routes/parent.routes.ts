@@ -11,6 +11,8 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
   resendVerificationEmailSchema,
+  childUpdateChildSchema,
+  childRegisterChildSchema,
 } from '../validators/parent.validator';
 
 import { authMiddleware } from '../middlewares/auth.middleware';
@@ -63,5 +65,39 @@ router.delete(
   validate(deleteAccountSchema),
   parentController.deleteParentAccount
 );
+
+// ================================== Child Operations ==================================
+
+// Register Child
+/**
+ * @route POST /parent/children
+ * @desc Register a new child under the authenticated parent
+ * @access Private
+ */
+router.post(
+  '/children',
+  validate(childRegisterChildSchema),
+  parentController.registerChild
+);
+
+// Update Child
+/**
+ * @route PUT /parent/children/:childId
+ * @desc Update a child's information
+ * @access Private
+ */
+router.put(
+  '/children/:childId',
+  validate(childUpdateChildSchema),
+  parentController.updateChild
+);
+
+// List Children
+/**
+ * @route GET /parent/children
+ * @desc List all children of the authenticated parent
+ * @access Private
+ */
+router.get('/children', parentController.listChildren);
 
 export default router;

@@ -1,7 +1,7 @@
 import { Service } from 'typedi';
 import prisma from '../prisma/client';
 import bcrypt from 'bcrypt';
-import { Parent } from '@prisma/client';
+import { Child, Parent } from '@prisma/client';
 import CustomError from '../utils/customError';
 import { Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,7 +9,11 @@ import { sendEmail } from '../utils/sendEmail';
 import config from '../config';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
 import { excludeField } from '../utils/helper-functions';
-import { AuthResponse, SafeParent } from '../interfaces/mainda.app.interface';
+import {
+  AuthParentResponse,
+  SafeChild,
+  SafeParent,
+} from '../interfaces/mainda.app.interface';
 
 @Service()
 export class ParentService {
@@ -89,7 +93,10 @@ export class ParentService {
    * @param password - Parent's password.
    * @returns JWT token and parent profile.
    */
-  async loginParent(email: string, password: string): Promise<AuthResponse> {
+  async loginParent(
+    email: string,
+    password: string
+  ): Promise<AuthParentResponse> {
     const parent = await prisma.parent.findUnique({
       where: { email },
     });
@@ -263,6 +270,19 @@ export class ParentService {
   async getParentById(id: number): Promise<SafeParent> {
     const parent = await prisma.parent.findUnique({
       where: { id },
+    });
+
+    return this.getParentData(parent!);
+  }
+
+  /**
+   * Retrieves a parent's profile by email.
+   * @param email - Parent's ID.
+   * @returns Parent object (excluding password and sensitive fields).
+   */
+  async getParentByEmail(email: string): Promise<SafeParent> {
+    const parent = await prisma.parent.findUnique({
+      where: { email },
     });
 
     return this.getParentData(parent!);
@@ -473,13 +493,174 @@ export class ParentService {
     // }
   }
 
+  // ================================================== Child operation =================================================
+
   /**
-   * Checks if a token is blacklisted.
-   * @param token - JWT token.
-   * @returns Boolean indicating if the token is blacklisted.
+   * Registers a new child under a parent.
+   * @param parentId - ID of the parent registering the child.
+   * @param username - Unique username for the child.
+   * @param birthDate - Child's birth date.
+   * @param password - Child's password.
+   * @param firstName - Child's first name.
+   * @param lastName - Child's last name.
+   * @param gender - Child's gender.
+   * @param schoolLevel - Child's school level.
+   * @returns The newly created child object (excluding password and sensitive fields).
    */
-  // async isTokenBlacklisted(token: string): Promise<boolean> {
-  //     const result = await promisify(redisClient.get).bind(redisClient)(`blacklist_${token}`);
-  //     return result === 'blacklisted';
-  // }
+  async registerChild(
+    parentId: number,
+    username: string,
+    birthDate: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    gender: string,
+    schoolLevel: string
+  ): Promise<SafeChild> {
+    // Verify parent exists and is active
+    const parent = await prisma.parent.findUnique({
+      where: { id: parentId },
+    });
+
+    if (!parent!.status) {
+      throw new CustomError(
+        'Parent account is deactivated',
+        403,
+        'PARENT_DEACTIVATED'
+      );
+    }
+
+    // Check if username is already taken
+    const existingChild = await prisma.child.findUnique({
+      where: { username },
+    });
+
+    if (existingChild) {
+      throw new CustomError('Username already in use', 409, 'USERNAME_IN_USE');
+    }
+
+    // Hash the child's password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the child
+    const newChild = await prisma.child.create({
+      data: {
+        username,
+        birthDate: new Date(birthDate),
+        password: hashedPassword,
+        firstName,
+        lastName,
+        gender,
+        schoolLevel,
+        parentId,
+      },
+    });
+    return this.getChildData(newChild);
+  }
+
+  /**
+   * Updates a child's information.
+   * @param parentId - ID of the parent updating the child.
+   * @param childId - ID of the child to be updated.
+   * @param updateData - Data to update (username, birthDate, password, firstName, lastName, gender, schoolLevel, status).
+   * @returns The updated child object (excluding password and sensitive fields).
+   */
+  async updateChild(
+    parentId: number,
+    childId: number,
+    updateData: {
+      username: string;
+      birthDate: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      gender: string;
+      schoolLevel: string;
+      parentEmail: string;
+      status: boolean;
+    }
+  ): Promise<SafeChild> {
+    const {
+      username,
+      birthDate,
+      password,
+      firstName,
+      lastName,
+      gender,
+      schoolLevel,
+      status,
+    } = updateData;
+    // Verify parent owns the child
+    const child = await prisma.child.findUnique({
+      where: { id: childId },
+    });
+
+    if (!child || child.parentId !== parentId) {
+      throw new CustomError(
+        'Child not found or unauthorized',
+        404,
+        'CHILD_NOT_FOUND_OR_UNAUTHORIZED'
+      );
+    }
+
+    // If username is being updated, check uniqueness
+    if (username && username !== child.username) {
+      const existingChild = await prisma.child.findUnique({
+        where: { username: updateData.username },
+      });
+      if (existingChild) {
+        throw new CustomError(
+          'Username already in use',
+          409,
+          'USERNAME_IN_USE'
+        );
+      }
+    }
+
+    // If password is being updated, hash it
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    const newChild = {
+      username,
+      password,
+      firstName,
+      lastName,
+      gender,
+      schoolLevel,
+      status,
+      parentId,
+      birthDate: new Date(birthDate),
+    };
+
+    const updatedChild = await prisma.child.update({
+      where: { id: childId },
+      data: { ...newChild },
+    });
+
+    return this.getChildData(updatedChild);
+  }
+
+  /**
+   * Lists all children of a parent.
+   * @param parentId - ID of the parent.
+   * @returns An array of child objects (excluding passwords and sensitive fields).
+   */
+  async listChildren(parentId: number): Promise<SafeChild[]> {
+    const children = await prisma.child.findMany({
+      where: { parentId },
+    });
+
+    return children.map((child) => this.getChildData(child));
+  }
+
+  /**
+   * Retrieves child data excluding sensitive fields.
+   * @param child - Child object from Prisma.
+   * @returns SafeChild object.
+   */
+  getChildData(child: Child): SafeChild {
+    return excludeField(child, ['password']);
+  }
 }

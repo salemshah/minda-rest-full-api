@@ -1,4 +1,4 @@
-import { Parent } from '@prisma/client';
+import { Child, Parent } from '@prisma/client';
 
 export interface TokenPayload {
   id: number;
@@ -6,6 +6,11 @@ export interface TokenPayload {
   firstName: string;
   lastName: string;
 }
+
+export type SafeChild = Omit<
+  Child,
+  'resetPasswordToken' | 'password' | 'resetPasswordExpires'
+>;
 
 export type SafeParent = Omit<
   Parent,
@@ -16,7 +21,13 @@ export type SafeParent = Omit<
   | 'resetPasswordExpires'
 >;
 
-export type AuthResponse = {
+export type AuthChildResponse = {
+  child: SafeChild;
+  accessToken: string;
+  refreshToken: string;
+};
+
+export type AuthParentResponse = {
   parent: SafeParent;
   accessToken: string;
   refreshToken: string;
