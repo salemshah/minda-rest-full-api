@@ -9,43 +9,41 @@ generator client {
 }
 
 model Parent {
-  id                   Int       @id @unique @default(autoincrement())
-  email                String    @unique
-  password             String
-  firstName            String
-  lastName             String
-  status               Boolean   @default(true)
-  birthDate            DateTime?
-  phoneNumber          String?
-  addressPostal        String?
-  relationWithChildren String?
-  children             Child[]
-  resetPasswordToken   String?   @unique
-  resetPasswordExpires DateTime?
-  isVerified            Boolean   @default(false)
-  verificationToken     String?   @unique
+  id                       Int       @id @unique @default(autoincrement())
+  email                    String    @unique
+  password                 String
+  firstName                String
+  lastName                 String
+  status                   Boolean   @default(true)
+  birthDate                DateTime?
+  phoneNumber              String?
+  addressPostal            String?
+  relationWithChildren     String?
+  children                 Child[]
+  resetPasswordToken       String?   @unique
+  resetPasswordExpires     DateTime?
+  isVerified               Boolean   @default(false)
+  verificationToken        String?   @unique
   verificationTokenExpires DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 }
 
 model Child {
-  id          Int      @id @default(autoincrement())
-  username    String   @unique
-  password    String
-  firstName   String
-  lastName    String
-  gender      String
-  schoolLevel String
-  parent      Parent   @relation(fields: [parentId], references: [id])
-  parentId    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  // enrollments  Enrollment[]
-  // progress     Progress[]
-  // achievements ChildAchievement[]
-  // Answer       Answer[]
-  // QuizResult   QuizResult[]
+  id                Int      @id @default(autoincrement())
+  username          String   @unique
+  birthDate         DateTime
+  password          String
+  firstName         String
+  lastName          String
+  gender            String
+  schoolLevel       String
+  profilePictureUrl String?
+  parent            Parent   @relation(fields: [parentId], references: [id])
+  parentId          Int
+  status            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 // model Subject {

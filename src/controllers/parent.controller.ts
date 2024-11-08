@@ -92,7 +92,7 @@ export class ParentController {
     const { email } = req.body;
     await this.parentService.forgotPassword(email);
     res.status(200).json({
-      message: `You will receive a link to reset your password in this email: ${email}`,
+      message: `You will receive a link to reset your password in the email: ${email}`,
     });
   });
 
@@ -130,4 +130,73 @@ export class ParentController {
       res.status(200).json(result);
     }
   );
+
+  // ================================================== Child Operations =================================================
+
+  /**
+   * Registers a new child under the authenticated parent.
+   * @route POST /parent/children
+   * @access Private
+   */
+  registerChild = asyncWrapper(async (req: Request, res: Response) => {
+    const parentId = req.parent.id;
+    const {
+      username,
+      birthDate,
+      password,
+      firstName,
+      lastName,
+      gender,
+      schoolLevel,
+    } = req.body;
+
+    const newChild = await this.parentService.registerChild(
+      parentId,
+      username,
+      birthDate,
+      password,
+      firstName,
+      lastName,
+      gender,
+      schoolLevel
+    );
+
+    res.status(201).json({
+      message: 'Child registered successfully',
+      child: newChild,
+    });
+  });
+
+  /**
+   * Updates a child's information.
+   * @route PUT /parent/children/:childId
+   * @access Private
+   */
+  updateChild = asyncWrapper(async (req: Request, res: Response) => {
+    const parentId = req.parent.id;
+    const childId = parseInt(req.params.childId, 10);
+    const updateData = req.body;
+
+    const updatedChild = await this.parentService.updateChild(
+      parentId,
+      childId,
+      updateData
+    );
+
+    res.status(200).json({
+      message: 'Child updated successfully',
+      child: updatedChild,
+    });
+  });
+
+  /**
+   * Lists all children of the authenticated parent.
+   * @route GET /parent/children
+   * @access Private
+   */
+  listChildren = asyncWrapper(async (req: Request, res: Response) => {
+    const parentId = req.parent.id;
+    const children = await this.parentService.listChildren(parentId);
+    res.status(200).json({ children });
+  });
 }

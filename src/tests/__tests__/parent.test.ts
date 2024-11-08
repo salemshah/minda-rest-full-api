@@ -1,5 +1,3 @@
-// tests/parent.test.ts
-
 import request from 'supertest';
 import { app } from '../jest.setup';
 import { PrismaClient } from '@prisma/client';
@@ -8,21 +6,38 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 describe('Parent Endpoints', () => {
-  const newEmail = 'salemshah686@gmail.com';
+  const newEmail = 'salem.jam@example.com';
   const parentData = {
-    firstName: 'salem',
-    lastName: 'shah',
-    email: 'salemshahdev@gmail.com',
+    firstName: 'Salem',
+    lastName: 'Shah',
+    email: 'salem@example.com',
     password: '123456',
   };
 
   let accessToken: string;
+  let parentId: number;
+
+  const childData = {
+    username: 'child_user', // same username as previous test
+    password: '123456',
+    birthDate: '2010-05-15T00:00:00.000Z',
+    firstName: 'Ahmad',
+    lastName: 'Rhamani',
+    gender: 'Male',
+    schoolLevel: 'Grade 5',
+    parentEmail: parentData.email,
+  };
+
+  beforeAll(async () => {
+    // Clean up the database before running tests
+    await prisma.child.deleteMany();
+    await prisma.parent.deleteMany();
+  });
 
   beforeEach(async () => {
-    await prisma.parent.deleteMany();
     // Register and login a parent to obtain accessToken
     const hash = await bcrypt.hash(parentData.password, 10);
-    await prisma.parent.create({
+    const parent = await prisma.parent.create({
       data: {
         firstName: parentData.firstName,
         lastName: parentData.lastName,
@@ -33,12 +48,19 @@ describe('Parent Endpoints', () => {
       },
     });
 
+    parentId = parent.id;
+
     const res = await request(app).post('/api/auth/parent-login').send({
       email: parentData.email,
       password: parentData.password,
     });
 
     accessToken = res.body.accessToken;
+  });
+
+  afterEach(async () => {
+    await prisma.child.deleteMany();
+    await prisma.parent.deleteMany();
   });
 
   describe('GET /api/parent/profile', () => {
@@ -530,6 +552,297 @@ describe('Parent Endpoints', () => {
       expect(res.body).toHaveProperty('errors');
       expect(res.body.errors).toContain('Invalid email address');
       // expect(sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  // =============================== Child Operations Tests ===============================
+
+  describe('Child Operations', () => {
+    let childId: number;
+
+    describe('POST /api/parent/children', () => {
+      it('should register a new child under the parent', async () => {
+        const res = await request(app)
+          .post('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(childData);
+
+        expect(res.statusCode).toEqual(201);
+        expect(res.body).toHaveProperty('message');
+        expect(res.body).toHaveProperty('child');
+        expect(res.body.child).toHaveProperty('username', childData.username);
+        expect(res.body.child).not.toHaveProperty('password');
+        expect(res.body.child).toHaveProperty('parentId', parentId);
+
+        childId = res.body.child.id;
+      });
+
+      it('should not register a child with an existing username', async () => {
+        await prisma.child.create({
+          data: {
+            username: childData.username,
+            password: await bcrypt.hash('anotherChildPass', 10),
+            birthDate: new Date('2010-05-15T00:00:00.000Z'),
+            firstName: 'AnotherChild',
+            lastName: 'LastName',
+            gender: 'Female',
+            schoolLevel: 'Grade 4',
+            parentId: parentId,
+          },
+        });
+        const res = await request(app)
+          .post('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(childData);
+
+        expect(res.statusCode).toEqual(409);
+        expect(res.body).toHaveProperty('message', 'Username already in use');
+        expect(res.body).toHaveProperty('statusCode', 409);
+        expect(res.body).toHaveProperty('success', false);
+      });
+
+      it('should return 400 for invalid input data', async () => {
+        const childData = {
+          username: '',
+          password: 'short',
+          birthDate: 'invalid-date',
+          firstName: '',
+          lastName: '',
+          gender: 'Unknown',
+          schoolLevel: '',
+          parentEmail: parentData.email,
+        };
+
+        const res = await request(app)
+          .post('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(childData);
+
+        expect(res.statusCode).toEqual(400);
+        expect(res.body).toHaveProperty('errors');
+        // Validate the specific validation errors if validation middleware provides detailed errors
+      });
+    });
+
+    describe('PUT /api/parent/children/:childId', () => {
+      beforeEach(async () => {
+        const res = await request(app)
+          .post('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(childData);
+        childId = res.body.child.id;
+      });
+
+      it('should update child information successfully', async () => {
+        const updateData = {
+          ...childData,
+          password: '123456',
+          birthDate: '2010-05-15T00:00:00.000Z',
+          firstName: 'Ahmad',
+          lastName: 'karimi',
+          gender: 'Female',
+          schoolLevel: 'Grade 8',
+          status: true,
+        };
+
+        const res = await request(app)
+          .put(`/api/parent/children/${childId}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(updateData);
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('message');
+        expect(res.body).toHaveProperty('child');
+        expect(res.body.child).toHaveProperty('username', updateData.username);
+        expect(res.body.child).toHaveProperty(
+          'firstName',
+          updateData.firstName
+        );
+        expect(res.body.child).toHaveProperty('lastName', updateData.lastName);
+        expect(res.body.child).toHaveProperty(
+          'schoolLevel',
+          updateData.schoolLevel
+        );
+      });
+
+      it('should not update child with existing username', async () => {
+        // Register another child to have a username conflict
+        await prisma.child.create({
+          data: {
+            username: 'existingUsername',
+            password: await bcrypt.hash('anotherChildPass', 10),
+            birthDate: new Date('2010-05-15T00:00:00.000Z'),
+            firstName: 'AnotherChild',
+            lastName: 'LastName',
+            gender: 'Female',
+            schoolLevel: 'Grade 4',
+            parentId: parentId,
+            status: true,
+          },
+        });
+
+        const updateData = {
+          username: 'existingUsername',
+          password: await bcrypt.hash('anotherChildPass', 10),
+          birthDate: new Date('2010-05-15T00:00:00.000Z'),
+          firstName: 'AnotherChild',
+          lastName: 'LastName',
+          gender: 'Female',
+          schoolLevel: 'Grade 4',
+          parentEmail: childData.parentEmail,
+          status: true,
+        };
+
+        const res = await request(app)
+          .put(`/api/parent/children/${childId}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(updateData);
+
+        expect(res.statusCode).toEqual(409);
+        expect(res.body).toHaveProperty('message');
+        expect(res.body).toHaveProperty('statusCode', 409);
+        expect(res.body).toHaveProperty('success', false);
+      });
+
+      it('should not update child that does not belong to the parent', async () => {
+        // Create a new parent and child not associated with the current parent
+        const anotherParent = await prisma.parent.create({
+          data: {
+            firstName: 'OtherParent',
+            lastName: 'LastName',
+            email: 'otherparent@example.com',
+            password: await bcrypt.hash('otherParentPass', 10),
+            isVerified: true,
+            status: true,
+          },
+        });
+
+        const otherChild = await prisma.child.create({
+          data: {
+            username: 'otherChild',
+            password: await bcrypt.hash('otherChildPass', 10),
+            birthDate: new Date('2011-05-15T00:00:00.000Z'),
+            firstName: 'OtherChild',
+            lastName: 'LastName',
+            gender: 'Male',
+            schoolLevel: 'Grade 5',
+            parentId: anotherParent.id,
+          },
+        });
+
+        const updateData = {
+          username: 'attemptedUpdateUsername',
+          password: await bcrypt.hash('anotherChildPass', 10),
+          birthDate: new Date('2010-05-15T00:00:00.000Z'),
+          firstName: 'AnotherChild',
+          lastName: 'LastName',
+          gender: 'Female',
+          schoolLevel: 'Grade 4',
+          parentEmail: childData.parentEmail,
+          status: true,
+        };
+
+        const res = await request(app)
+          .put(`/api/parent/children/${otherChild.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(updateData);
+
+        expect(res.statusCode).toEqual(404);
+        expect(res.body).toHaveProperty(
+          'message',
+          'Child not found or unauthorized'
+        );
+        expect(res.body).toHaveProperty('statusCode', 404);
+        expect(res.body).toHaveProperty('success', false);
+      });
+
+      it('should return 400 for invalid input data', async () => {
+        const updateData = {
+          username: '',
+          password: 'short',
+          birthDate: 'invalid-date',
+        };
+
+        const res = await request(app)
+          .put(`/api/parent/children/${childId}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(updateData);
+
+        expect(res.statusCode).toEqual(400);
+        expect(res.body).toHaveProperty('errors');
+        // Validate the specific validation errors if validation middleware provides detailed errors
+      });
+    });
+
+    describe('GET /api/parent/children', () => {
+      beforeEach(async () => {
+        // Register multiple children under the parent
+        const childData1 = {
+          username: 'child1',
+          password: 'childPass123',
+          birthDate: '2010-05-15T00:00:00.000Z',
+          firstName: 'ChildFirstName1',
+          lastName: 'ChildLastName1',
+          gender: 'Male',
+          parentEmail: childData.parentEmail,
+          schoolLevel: 'Grade 5',
+          status: true,
+        };
+
+        const childData2 = {
+          username: 'child2',
+          password: 'childPass123',
+          birthDate: '2011-05-15T00:00:00.000Z',
+          firstName: 'ChildFirstName2',
+          lastName: 'ChildLastName2',
+          gender: 'Female',
+          parentEmail: childData.parentEmail,
+          schoolLevel: 'Grade 4',
+          status: true,
+        };
+
+        await request(app)
+          .post('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(childData1);
+
+        await request(app)
+          .post('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(childData2);
+      });
+
+      it('should list all children of the authenticated parent', async () => {
+        const res = await request(app)
+          .get('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`);
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('children');
+        expect(Array.isArray(res.body.children)).toBe(true);
+        expect(res.body.children.length).toBeGreaterThanOrEqual(2);
+      });
+
+      it('should return an empty array if the parent has no children', async () => {
+        // Clean up children
+        await prisma.child.deleteMany({ where: { parentId } });
+
+        const res = await request(app)
+          .get('/api/parent/children')
+          .set('Authorization', `Bearer ${accessToken}`);
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty('children');
+        expect(Array.isArray(res.body.children)).toBe(true);
+        expect(res.body.children.length).toEqual(0);
+      });
+
+      it('should not list children without authentication', async () => {
+        const res = await request(app).get('/api/parent/children');
+
+        expect(res.statusCode).toEqual(401);
+        expect(res.body).toHaveProperty('message');
+      });
     });
   });
 });

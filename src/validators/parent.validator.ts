@@ -1,5 +1,3 @@
-// src/validators/user.validator.ts
-
 import { z } from 'zod';
 
 export const updateEmailSchema = z.object({
@@ -48,4 +46,37 @@ export const verifyEmailSchema = z.object({
 
 export const resendVerificationEmailSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
+});
+
+// Register Child Schema
+export const childRegisterChildSchema = z.object({
+  username: z.string().min(1, { message: 'Username is required' }),
+  birthDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format',
+  }),
+  password: z
+    .string()
+    .min(6, { message: 'Password must be at least 6 characters long' }),
+  firstName: z.string().min(1, { message: 'First name is required' }),
+  lastName: z.string().min(1, { message: 'Last name is required' }),
+  gender: z.string().min(1, { message: 'Gender is required' }),
+  schoolLevel: z.string().min(1, { message: 'School level is required' }),
+  parentEmail: z.string().email({ message: 'Invalid email address' }),
+});
+
+// Update Child Schema
+export const childUpdateChildSchema = z.object({
+  username: z.string().min(1, { message: 'Username is required' }),
+  birthDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format',
+  }),
+  password: z
+    .string()
+    .min(6, { message: 'Password must be at least 6 characters long' }),
+  firstName: z.string().min(1, { message: 'First name is required' }),
+  lastName: z.string().min(1, { message: 'Last name is required' }),
+  gender: z.string().min(1, { message: 'Gender is required' }),
+  schoolLevel: z.string().min(1, { message: 'School level is required' }),
+  parentEmail: z.string().email({ message: 'Invalid email address' }),
+  status: z.boolean(),
 });
