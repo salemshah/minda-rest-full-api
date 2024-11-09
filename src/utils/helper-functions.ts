@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import figlet from 'figlet';
 import chalk from 'chalk';
-import { Child, Parent } from '@prisma/client';
 
 function excludeField<T extends Record<string, unknown>, Key extends keyof T>(
   data: T,
@@ -37,14 +36,9 @@ const setAccessTokenCookie = (res: Response, token: string) => {
   });
 };
 
-const isParent = (decoded: Parent | Child): decoded is Parent => {
-  return (decoded as Parent).email !== undefined;
-};
-
 export {
   excludeField,
   figletText,
   setAccessTokenCookie,
   setRefreshTokenCookie,
-  isParent,
 };
