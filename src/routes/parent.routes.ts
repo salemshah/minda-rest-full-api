@@ -15,7 +15,8 @@ import {
   childRegisterChildSchema,
 } from '../validators/parent.validator';
 
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { parentAuthMiddleware } from '../middlewares/parentAuth.middleware';
+
 const parentController = Container.get(ParentController);
 
 const router = Router();
@@ -43,7 +44,7 @@ router.post(
 );
 
 // Private Routes
-router.use(authMiddleware);
+router.use(parentAuthMiddleware);
 router.get('/profile', parentController.getParentProfile);
 router.put(
   '/update-email',
