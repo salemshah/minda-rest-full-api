@@ -3,7 +3,7 @@ import { verifyAccessToken } from '../utils/jwt';
 import { Parent } from '@prisma/client';
 import logger from '../utils/logger';
 
-export const authMiddleware = (
+export const parentAuthMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction
@@ -11,7 +11,6 @@ export const authMiddleware = (
   let token: string = '';
   if (req?.cookies?.accessToken) {
     token = req.cookies.accessToken as string;
-    console.log({ token });
   } else if (
     req?.headers?.authorization &&
     req?.headers?.authorization?.startsWith('Bearer')
