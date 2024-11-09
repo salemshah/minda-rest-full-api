@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../utils/jwt';
-import { Child, Parent } from '@prisma/client';
+import { Parent } from '@prisma/client';
 import logger from '../utils/logger';
-import { isParent } from '../utils/helper-functions';
 
 export const authMiddleware = (
   req: Request,
@@ -24,10 +23,7 @@ export const authMiddleware = (
   }
 
   try {
-    const decoded = verifyAccessToken(token) as Parent | Child;
-    if (isParent(decoded)) req.parent = decoded;
-    else req.child = decoded;
-
+    req.parent = verifyAccessToken(token) as Parent;
     next();
   } catch (err) {
     logger.error(err);
