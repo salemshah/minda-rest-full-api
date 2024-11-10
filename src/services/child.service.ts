@@ -36,7 +36,6 @@ export class ChildService {
     }
 
     const isMatch = await bcrypt.compare(password, child.password);
-    console.log({ isMatch });
     if (!isMatch) {
       throw new CustomError(
         'Invalid username or password',
@@ -123,10 +122,6 @@ export class ChildService {
 
     if (!child) {
       throw new CustomError('Child not found', 404, 'CHILD_NOT_FOUND');
-    }
-
-    if (!child.parent) {
-      throw new CustomError('Parent not found', 404, 'PARENT_NOT_FOUND');
     }
 
     // Notify the parent via email

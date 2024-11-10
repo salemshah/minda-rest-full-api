@@ -3,7 +3,7 @@ import { verifyAccessToken } from '../utils/jwt';
 import { Child } from '@prisma/client';
 import logger from '../utils/logger';
 
-export const parentAuthMiddleware = (
+export const childAuthMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction
