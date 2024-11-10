@@ -14,7 +14,7 @@
     "build": "tsc",
     "dev": "nodemon",
     "lint": "eslint 'src/**/*.ts' --watch",
-    "lint:fix": "eslint src/**/*.ts --fix",
+    "lint:fix": "eslint '**/*.ts' --fix",
     "lint:ci": "eslint 'src/**/*.ts'",
     "lint:fix:ci": "eslint 'src/**/*.ts' --fix",
     "prisma:generate": "npx prisma generate",
