@@ -18,14 +18,12 @@ describe('Parent Endpoints', () => {
   let parentId: number;
 
   const childData = {
-    username: 'child_user', // same username as previous test
     password: '123456',
     birthDate: '2010-05-15T00:00:00.000Z',
     firstName: 'Ahmad',
     lastName: 'Rhamani',
     gender: 'Male',
     schoolLevel: 'Grade 5',
-    parentEmail: parentData.email,
   };
 
   beforeAll(async () => {
@@ -500,14 +498,6 @@ describe('Parent Endpoints', () => {
 
       expect(res.statusCode).toEqual(200);
       expect(res.body).toHaveProperty('message');
-
-      // // Verify that sendEmail was called
-      // expect(sendEmail).toHaveBeenCalledTimes(1);
-      // expect(sendEmail).toHaveBeenCalledWith({
-      //     to: parentData.email,
-      //     subject: 'Verify Your Email',
-      //     html: expect.stringContaining('Verify Email'),
-      // });
     });
 
     it('should not resend verification email if already verified', async () => {
@@ -560,61 +550,35 @@ describe('Parent Endpoints', () => {
   describe('Child Operations', () => {
     let childId: number;
 
-    describe('POST /api/parent/children', () => {
+    describe('POST /api/parent/child/register', () => {
       it('should register a new child under the parent', async () => {
         const res = await request(app)
-          .post('/api/parent/children')
+          .post('/api/parent/child/register')
           .set('Authorization', `Bearer ${accessToken}`)
           .send(childData);
 
         expect(res.statusCode).toEqual(201);
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('child');
-        expect(res.body.child).toHaveProperty('username', childData.username);
+        expect(res.body.child).toHaveProperty('username');
         expect(res.body.child).not.toHaveProperty('password');
         expect(res.body.child).toHaveProperty('parentId', parentId);
 
         childId = res.body.child.id;
       });
 
-      it('should not register a child with an existing username', async () => {
-        await prisma.child.create({
-          data: {
-            username: childData.username,
-            password: await bcrypt.hash('anotherChildPass', 10),
-            birthDate: new Date('2010-05-15T00:00:00.000Z'),
-            firstName: 'AnotherChild',
-            lastName: 'LastName',
-            gender: 'Female',
-            schoolLevel: 'Grade 4',
-            parentId: parentId,
-          },
-        });
-        const res = await request(app)
-          .post('/api/parent/children')
-          .set('Authorization', `Bearer ${accessToken}`)
-          .send(childData);
-
-        expect(res.statusCode).toEqual(409);
-        expect(res.body).toHaveProperty('message', 'Username already in use');
-        expect(res.body).toHaveProperty('statusCode', 409);
-        expect(res.body).toHaveProperty('success', false);
-      });
-
       it('should return 400 for invalid input data', async () => {
         const childData = {
-          username: '',
           password: 'short',
           birthDate: 'invalid-date',
           firstName: '',
           lastName: '',
           gender: 'Unknown',
           schoolLevel: '',
-          parentEmail: parentData.email,
         };
 
         const res = await request(app)
-          .post('/api/parent/children')
+          .post('/api/parent/child/register')
           .set('Authorization', `Bearer ${accessToken}`)
           .send(childData);
 
@@ -624,10 +588,10 @@ describe('Parent Endpoints', () => {
       });
     });
 
-    describe('PUT /api/parent/children/:childId', () => {
+    describe('PUT /api/parent/child/update/:childId', () => {
       beforeEach(async () => {
         const res = await request(app)
-          .post('/api/parent/children')
+          .post('/api/parent/child/register')
           .set('Authorization', `Bearer ${accessToken}`)
           .send(childData);
         childId = res.body.child.id;
@@ -646,14 +610,14 @@ describe('Parent Endpoints', () => {
         };
 
         const res = await request(app)
-          .put(`/api/parent/children/${childId}`)
+          .put(`/api/parent/child/update/${childId}`)
           .set('Authorization', `Bearer ${accessToken}`)
           .send(updateData);
 
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('message');
         expect(res.body).toHaveProperty('child');
-        expect(res.body.child).toHaveProperty('username', updateData.username);
+        expect(res.body.child).toHaveProperty('username');
         expect(res.body.child).toHaveProperty(
           'firstName',
           updateData.firstName
@@ -663,45 +627,6 @@ describe('Parent Endpoints', () => {
           'schoolLevel',
           updateData.schoolLevel
         );
-      });
-
-      it('should not update child with existing username', async () => {
-        // Register another child to have a username conflict
-        await prisma.child.create({
-          data: {
-            username: 'existingUsername',
-            password: await bcrypt.hash('anotherChildPass', 10),
-            birthDate: new Date('2010-05-15T00:00:00.000Z'),
-            firstName: 'AnotherChild',
-            lastName: 'LastName',
-            gender: 'Female',
-            schoolLevel: 'Grade 4',
-            parentId: parentId,
-            status: true,
-          },
-        });
-
-        const updateData = {
-          username: 'existingUsername',
-          password: await bcrypt.hash('anotherChildPass', 10),
-          birthDate: new Date('2010-05-15T00:00:00.000Z'),
-          firstName: 'AnotherChild',
-          lastName: 'LastName',
-          gender: 'Female',
-          schoolLevel: 'Grade 4',
-          parentEmail: childData.parentEmail,
-          status: true,
-        };
-
-        const res = await request(app)
-          .put(`/api/parent/children/${childId}`)
-          .set('Authorization', `Bearer ${accessToken}`)
-          .send(updateData);
-
-        expect(res.statusCode).toEqual(409);
-        expect(res.body).toHaveProperty('message');
-        expect(res.body).toHaveProperty('statusCode', 409);
-        expect(res.body).toHaveProperty('success', false);
       });
 
       it('should not update child that does not belong to the parent', async () => {
@@ -738,12 +663,11 @@ describe('Parent Endpoints', () => {
           lastName: 'LastName',
           gender: 'Female',
           schoolLevel: 'Grade 4',
-          parentEmail: childData.parentEmail,
           status: true,
         };
 
         const res = await request(app)
-          .put(`/api/parent/children/${otherChild.id}`)
+          .put(`/api/parent/child/update/${otherChild.id}`)
           .set('Authorization', `Bearer ${accessToken}`)
           .send(updateData);
 
@@ -764,7 +688,7 @@ describe('Parent Endpoints', () => {
         };
 
         const res = await request(app)
-          .put(`/api/parent/children/${childId}`)
+          .put(`/api/parent/child/update/${childId}`)
           .set('Authorization', `Bearer ${accessToken}`)
           .send(updateData);
 
@@ -784,7 +708,6 @@ describe('Parent Endpoints', () => {
           firstName: 'ChildFirstName1',
           lastName: 'ChildLastName1',
           gender: 'Male',
-          parentEmail: childData.parentEmail,
           schoolLevel: 'Grade 5',
           status: true,
         };
@@ -796,18 +719,17 @@ describe('Parent Endpoints', () => {
           firstName: 'ChildFirstName2',
           lastName: 'ChildLastName2',
           gender: 'Female',
-          parentEmail: childData.parentEmail,
           schoolLevel: 'Grade 4',
           status: true,
         };
 
         await request(app)
-          .post('/api/parent/children')
+          .post('/api/parent/child/register')
           .set('Authorization', `Bearer ${accessToken}`)
           .send(childData1);
 
         await request(app)
-          .post('/api/parent/children')
+          .post('/api/parent/child/register')
           .set('Authorization', `Bearer ${accessToken}`)
           .send(childData2);
       });
