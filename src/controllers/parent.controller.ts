@@ -140,19 +140,11 @@ export class ParentController {
    */
   registerChild = asyncWrapper(async (req: Request, res: Response) => {
     const parentId = req.parent.id;
-    const {
-      username,
-      birthDate,
-      password,
-      firstName,
-      lastName,
-      gender,
-      schoolLevel,
-    } = req.body;
+    const { birthDate, password, firstName, lastName, gender, schoolLevel } =
+      req.body;
 
     const newChild = await this.parentService.registerChild(
       parentId,
-      username,
       birthDate,
       password,
       firstName,

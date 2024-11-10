@@ -385,9 +385,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  #============================================= Child Operations ==============================================
+  #============================================= Child Operations by parent ==============================================
 
-  /parent/children:
+  /parent/child/register:
     post:
       tags:
         - Child
@@ -420,6 +420,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /parent/children:
     get:
       tags:
         - Child
@@ -439,8 +440,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /parent/children/{childId}:
+  /parent/child/update/{childId}:
     put:
       tags:
         - Child
@@ -492,7 +492,7 @@ components:
 
   schemas:
 
-    #================================================================================== Parent schemas ==================================================
+    #================================================================================== Parent schemas by parent ==================================================
 
     RegisterRequest:
       type: object
@@ -745,12 +745,11 @@ components:
           type: string
           example: "Account deactivated successfully"
 
-    #============================================= Child schemas ==============================================
+    #============================================= Child schemas by parent ==============================================
 
     RegisterChildRequest:
       type: object
       required:
-        - username
         - birthDate
         - password
         - firstName
@@ -758,23 +757,20 @@ components:
         - gender
         - schoolLevel
       properties:
-        username:
-          type: string
-          example: "child123"
         password:
           type: string
           format: password
-          example: "childPassword"
+          example: "123456"
         birthDate:
           type: string
           format: date-time
           example: "2010-05-15T00:00:00.000Z"
         firstName:
           type: string
-          example: "John"
+          example: "Ahmad"
         lastName:
           type: string
-          example: "Doe"
+          example: "Rahmani"
         gender:
           type: string
           example: "Male"
@@ -794,23 +790,20 @@ components:
     UpdateChildRequest:
       type: object
       properties:
-        username:
-          type: string
-          example: "newChildUsername"
         password:
           type: string
           format: password
-          example: "newChildPassword"
+          example: "123456"
         birthDate:
           type: string
           format: date-time
           example: "2010-05-15T00:00:00.000Z"
         firstName:
           type: string
-          example: "John"
+          example: "Ahmad"
         lastName:
           type: string
-          example: "Doe"
+          example: "Rahmani"
         gender:
           type: string
           example: "Male"
@@ -844,19 +837,16 @@ components:
         id:
           type: integer
           example: 1
-        username:
-          type: string
-          example: "child123"
         birthDate:
           type: string
           format: date-time
           example: "2010-05-15T00:00:00.000Z"
         firstName:
           type: string
-          example: "John"
+          example: "Ahmad"
         lastName:
           type: string
-          example: "Doe"
+          example: "Rahmani"
         gender:
           type: string
           example: "Male"

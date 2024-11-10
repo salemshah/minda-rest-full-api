@@ -38,7 +38,6 @@ beforeAll(async () => {
   runMigrations();
   await prisma.$connect();
   await prisma.parent.deleteMany();
-  console.log('All deleted from parent');
   app = await initializeApp();
 });
 

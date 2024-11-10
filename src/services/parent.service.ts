@@ -276,19 +276,6 @@ export class ParentService {
   }
 
   /**
-   * Retrieves a parent's profile by email.
-   * @param email - Parent's ID.
-   * @returns Parent object (excluding password and sensitive fields).
-   */
-  async getParentByEmail(email: string): Promise<SafeParent> {
-    const parent = await prisma.parent.findUnique({
-      where: { email },
-    });
-
-    return this.getParentData(parent!);
-  }
-
-  /**
    * Updates a parent's email.
    * @param parentId - Parent's ID.
    * @param newEmail - New email address.
@@ -498,7 +485,6 @@ export class ParentService {
   /**
    * Registers a new child under a parent.
    * @param parentId - ID of the parent registering the child.
-   * @param username - Unique username for the child.
    * @param birthDate - Child's birth date.
    * @param password - Child's password.
    * @param firstName - Child's first name.
@@ -509,7 +495,6 @@ export class ParentService {
    */
   async registerChild(
     parentId: number,
-    username: string,
     birthDate: string,
     password: string,
     firstName: string,
@@ -522,39 +507,36 @@ export class ParentService {
       where: { id: parentId },
     });
 
-    if (!parent!.status) {
-      throw new CustomError(
-        'Parent account is deactivated',
-        403,
-        'PARENT_DEACTIVATED'
-      );
-    }
+    const firstNameLowerCase = firstName.toLowerCase().replace(' ', '-');
+    const parentUserName = parent!.email.toLowerCase().split('@')[0];
+    const username = `${firstNameLowerCase}_${parentUserName}`;
+
+    // Hash the child's password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newChildData = {
+      username,
+      birthDate: new Date(birthDate),
+      password: hashedPassword,
+      firstName,
+      lastName,
+      gender,
+      schoolLevel,
+      parentId,
+    };
 
     // Check if username is already taken
     const existingChild = await prisma.child.findUnique({
       where: { username },
     });
 
-    if (existingChild) {
-      throw new CustomError('Username already in use', 409, 'USERNAME_IN_USE');
-    }
-
-    // Hash the child's password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (existingChild) newChildData.username = `${username}_1`;
 
     // Create the child
     const newChild = await prisma.child.create({
-      data: {
-        username,
-        birthDate: new Date(birthDate),
-        password: hashedPassword,
-        firstName,
-        lastName,
-        gender,
-        schoolLevel,
-        parentId,
-      },
+      data: newChildData,
     });
+
     return this.getChildData(newChild);
   }
 
@@ -569,7 +551,6 @@ export class ParentService {
     parentId: number,
     childId: number,
     updateData: {
-      username: string;
       birthDate: string;
       password: string;
       firstName: string;
@@ -581,7 +562,6 @@ export class ParentService {
     }
   ): Promise<SafeChild> {
     const {
-      username,
       birthDate,
       password,
       firstName,
@@ -590,6 +570,7 @@ export class ParentService {
       schoolLevel,
       status,
     } = updateData;
+
     // Verify parent owns the child
     const child = await prisma.child.findUnique({
       where: { id: childId },
@@ -603,27 +584,7 @@ export class ParentService {
       );
     }
 
-    // If username is being updated, check uniqueness
-    if (username && username !== child.username) {
-      const existingChild = await prisma.child.findUnique({
-        where: { username: updateData.username },
-      });
-      if (existingChild) {
-        throw new CustomError(
-          'Username already in use',
-          409,
-          'USERNAME_IN_USE'
-        );
-      }
-    }
-
-    // If password is being updated, hash it
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 10);
-    }
-
-    const newChild = {
-      username,
+    const updateChild = {
       password,
       firstName,
       lastName,
@@ -634,9 +595,14 @@ export class ParentService {
       birthDate: new Date(birthDate),
     };
 
+    // If password is being updated, hash it
+    if (updateData.password) {
+      updateChild.password = await bcrypt.hash(password, 10);
+    }
+
     const updatedChild = await prisma.child.update({
       where: { id: childId },
-      data: { ...newChild },
+      data: { ...updateChild },
     });
 
     return this.getChildData(updatedChild);

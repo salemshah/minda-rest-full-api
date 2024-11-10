@@ -76,7 +76,7 @@ router.delete(
  * @access Private
  */
 router.post(
-  '/children',
+  '/child/register',
   validate(childRegisterChildSchema),
   parentController.registerChild
 );
@@ -88,7 +88,7 @@ router.post(
  * @access Private
  */
 router.put(
-  '/children/:childId',
+  '/child/update/:childId',
   validate(childUpdateChildSchema),
   parentController.updateChild
 );
