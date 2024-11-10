@@ -11,13 +11,12 @@ servers:
   - url: http://localhost:7000/api
     description: Staging server
 
-paths:
   #================================================================================== Parent paths ==================================================
-
+paths:
   /auth/parent-register:
     post:
       tags:
-        - Authentication
+        - Parent-Authentication
       summary: Register a new parent
       requestBody:
         description: Parent registration details
@@ -45,11 +44,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/parent-login:
     post:
       tags:
-        - Authentication
+        - Parent-Authentication
       summary: Parent login
       requestBody:
         description: Parent login credentials
@@ -82,11 +80,10 @@ paths:
                   summary: Invalid login credentials
                   value:
                     error: "Invalid email or password."
-
   /auth/refresh-token:
     post:
       tags:
-        - Authentication
+        - Parent-Authentication
       summary: Refresh access token
       requestBody:
         description: Refresh token for obtaining a new access token
@@ -114,11 +111,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/logout:
     post:
       tags:
-        - Authentication
+        - Parent-Authentication
       summary: Logout parent
       requestBody:
         description: Refresh token to invalidate
@@ -140,7 +136,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /parent/verify-email:
     post:
       tags:
@@ -172,7 +167,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /parent/resend-verification-email:
     post:
       tags:
@@ -204,7 +198,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /parent/profile:
     get:
       tags:
@@ -230,7 +223,6 @@ paths:
                   summary: Unauthorized access example
                   value:
                     error: "Unauthorized access. Please provide a valid authentication token."
-
   /parent/update-email:
     put:
       tags:
@@ -270,7 +262,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /parent/update-password:
     put:
       tags:
@@ -310,7 +301,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /parent/complete-registration:
     put:
       tags:
@@ -344,7 +334,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /parent/remove-account:
     delete:
       tags:
@@ -385,12 +374,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  #============================================= Child Operations by parent ==============================================
+  #==================================================================================
+  # Child Operations by parent
+  #==================================================================================
 
   /parent/child/register:
     post:
       tags:
-        - Child
+        - Parent-Child
       summary: Register a new child under the authenticated parent
       security:
         - bearerAuth: [ ]
@@ -423,7 +414,7 @@ paths:
   /parent/children:
     get:
       tags:
-        - Child
+        - Parent-Child
       summary: List all children of the authenticated parent
       security:
         - bearerAuth: [ ]
@@ -443,7 +434,7 @@ paths:
   /parent/child/update/{childId}:
     put:
       tags:
-        - Child
+        - Parent-Child
       summary: Update a child's information
       security:
         - bearerAuth: [ ]
@@ -481,6 +472,185 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  #==================================================================================
+  # Child Docs
+  #==================================================================================
+
+  /child/login:
+    post:
+      tags:
+        - Child
+      summary: Child login
+      requestBody:
+        description: Child login credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChildLoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildLoginResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid login credentials
+                  value:
+                    error: "Invalid username or password."
+  /child/forgot-password:
+    post:
+      tags:
+        - Child
+      summary: Initiate password reset for child
+      requestBody:
+        description: Username of the child requesting password reset
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset email sent to parent."
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Child or Parent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                childNotFound:
+                  summary: Child not found
+                  value:
+                    error: "Child not found."
+                parentNotFound:
+                  summary: Parent not found
+                  value:
+                    error: "Parent not found."
+  /child/profile:
+    get:
+      tags:
+        - Child
+      summary: Retrieve authenticated child's profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful retrieval of child profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildProfileResponse'
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  summary: Unauthorized access
+                  value:
+                    error: "Unauthorized access. Please provide a valid token."
+        '404':
+          description: Not Found - Child not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                childNotFound:
+                  summary: Child not found
+                  value:
+                    error: "Child not found."
+  /child/profile-picture:
+    put:
+      tags:
+        - Child
+      summary: Update authenticated child's profile picture
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: New profile picture URL
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfilePictureRequest'
+      responses:
+        '200':
+          description: Profile picture updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildProfileResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidURL:
+                  summary: Invalid profile picture URL
+                  value:
+                    error: "Invalid profile picture URL."
+                missingURL:
+                  summary: Missing profile picture URL
+                  value:
+                    error: "Profile picture URL is required."
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  summary: Unauthorized access
+                  value:
+                    error: "Unauthorized access. Please provide a valid token."
+        '404':
+          description: Not Found - Child not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                childNotFound:
+                  summary: Child not found
+                  value:
+                    error: "Child not found."
+
 components:
   #================================================================================== JWT schema ==================================================
 
@@ -492,7 +662,7 @@ components:
 
   schemas:
 
-    #================================================================================== Parent schemas by parent ==================================================
+    #================================================================================== Parent schemas ============================================
 
     RegisterRequest:
       type: object
@@ -634,10 +804,10 @@ components:
           example: salemshahdev@gmail.com
         firstName:
           type: string
-          example: Ahmad
+          example: Salem
         lastName:
           type: string
-          example: Rahmani
+          example: Shah
         status:
           type: boolean
           example: true
@@ -745,7 +915,9 @@ components:
           type: string
           example: "Account deactivated successfully"
 
-    #============================================= Child schemas by parent ==============================================
+    #==================================================================================
+    # Child schemas by parent
+    #==================================================================================
 
     RegisterChildRequest:
       type: object
@@ -864,6 +1036,92 @@ components:
           type: string
           format: date-time
           example: "2024-01-02T12:00:00.000Z"
+
+
+    #==================================================================================
+    # Child Schemas
+    #==================================================================================
+
+    ChildLoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: ahmad_salemshahdev
+        password:
+          type: string
+          format: password
+          example: 123456
+
+    ChildLoginResponse:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/SafeChild'
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          example: alice123
+
+    UpdateProfilePictureRequest:
+      type: object
+      required:
+        - profilePictureUrl
+      properties:
+        profilePictureUrl:
+          type: string
+          format: uri
+          example: "http://example.com/new-pic.jpg"
+
+    SafeChild:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: alice123
+        firstName:
+          type: string
+          example: Ahmad
+        lastName:
+          type: string
+          example: Rahmani
+        status:
+          type: boolean
+          example: true
+        profilePictureUrl:
+          type: string
+          format: uri
+          example: "http://example.com/pic.jpg"
+        parent:
+          $ref: '#/components/schemas/UserProfile'
+
+    ChildProfileResponse:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/SafeChild'
+
+    #==================================================================================
+    # Existing User Schemas
+    #==================================================================================
+
 
     #================================================================================== Error schema ==================================================
 
