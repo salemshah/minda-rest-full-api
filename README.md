@@ -18,10 +18,11 @@
     - [Database Setup](#database-setup)
     - [Running the Project](#running-the-project)
 - [Scripts](#scripts)
-- [API Documentation](#api-documentation)
-- [Testing](#testing)
-- [Linting and Formatting](#linting-and-formatting)
-- [Contributing](#contributing)
+
+[//]: # (- [API Documentation]&#40;#api-documentation&#41;)
+[//]: # (- [Testing]&#40;#testing&#41;)
+[//]: # (- [Linting and Formatting]&#40;#linting-and-formatting&#41;)
+[//]: # (- [Contributing]&#40;#contributing&#41;)
 - [License](#license)
 - [Author](#author)
 
@@ -89,42 +90,45 @@ Ensure you have the following installed on your machine:
 
 ## Scripts
 
-| Command                   | Description                                      |
-| ------------------------- | ------------------------------------------------ |
-| `npm run dev`             | Start the development server with nodemon         |
-| `npm run build`           | Compile TypeScript to JavaScript                 |
-| `npm start`               | Start the production server                       |
-| `npm run lint`            | Run ESLint in watch mode                          |
-| `npm run lint:fix`        | Fix linting issues automatically                  |
-| `npm run format`          | Format the codebase using Prettier                |
-| `npm run format:check`    | Check code formatting without making changes      |
-| `npm run test`            | Run tests with coverage                           |
-| `npm run test:ci`         | Run tests in CI mode                              |
-| `npm run prisma:generate` | Generate Prisma client                            |
-| `npm run prisma:migrate`  | Apply database migrations                         |
-| `npm run prisma:push`     | Push Prisma schema to the database                |
-| `npm run prepare`         | Install Husky Git hooks                           |
-| `npm run migrate`         | Run custom migration scripts using ts-node         |
+| Command                   | Description                                  |
+|---------------------------|----------------------------------------------|
+| `npm run dev`             | Start the development server with nodemon    |
+| `npm run build`           | Compile TypeScript to JavaScript             |
+| `npm start`               | Start the production server                  |
+| `npm run lint`            | Run ESLint in watch mode                     |
+| `npm run lint:fix`        | Fix linting issues automatically             |
+| `npm run format`          | Format the codebase using Prettier           |
+| `npm run format:check`    | Check code formatting without making changes |
+| `npm run test`            | Run tests with coverage                      |
+| `npm run test:ci`         | Run tests in CI mode                         |
+| `npm run prisma:generate` | Generate Prisma client                       |
+| `npm run prisma:migrate`  | Apply database migrations                    |
+| `npm run prisma:push`     | Push Prisma schema to the database           |
+| `npm run prepare`         | Install Husky Git hooks                      |
+| `npm run migrate`         | Run custom migration scripts using ts-node   |
 
 
 ## Environment Variables
 
-| Variable                     | Description                                                   |
-| ---------------------------- | ------------------------------------------------------------- |
-| `PORT`                       | The port on which the server will run. Default is `8000`.     |
-| `DATABASE_URL`               | The connection string for the database.                       |
-| `ACCESS_TOKEN_SECRET`        | Secret key for signing access tokens (JWT).                   |
-| `REFRESH_TOKEN_SECRET`       | Secret key for signing refresh tokens (JWT).                  |
-| `EMAIL_HOST`                 | SMTP server host for sending emails. Example: `smtp-relay.brevo.com`. |
-| `EMAIL_PORT`                 | SMTP server port. Default is `587`.                            |
-| `EMAIL_USER`                 | SMTP server username for authentication.                      |
-| `EMAIL_PASS`                 | SMTP server password for authentication.                      |
-| `EMAIL_FROM`                 | Default "from" email address for outgoing emails.              |
-| `FRONTEND_URL_FORGOT_PASSWORD` | URL to redirect users for password reset. Example: `http://localhost:8000/api/parent/reset-password`. |
-| `FRONTEND_URL_VERIFY_EMAIL`  | URL to redirect users for email verification. Example: `http://localhost:8000/api/parent/verify-email`. |
+| Variable                       | Description                                                                                             |
+|--------------------------------|---------------------------------------------------------------------------------------------------------|
+| `PORT`                         | The port on which the server will run. Default is `8000`.                                               |
+| `DATABASE_URL`                 | The connection string for the database.                                                                 |
+| `ACCESS_TOKEN_SECRET`          | Secret key for signing access tokens (JWT).                                                             |
+| `REFRESH_TOKEN_SECRET`         | Secret key for signing refresh tokens (JWT).                                                            |
+| `EMAIL_HOST`                   | SMTP server host for sending emails. Example: `smtp-relay.brevo.com`.                                   |
+| `EMAIL_PORT`                   | SMTP server port. Default is `587`.                                                                     |
+| `EMAIL_USER`                   | SMTP server username for authentication.                                                                |
+| `EMAIL_PASS`                   | SMTP server password for authentication.                                                                |
+| `EMAIL_FROM`                   | Default "from" email address for outgoing emails.                                                       |
+| `FRONTEND_URL_FORGOT_PASSWORD` | URL to redirect users for password reset. Example: `http://localhost:8000/api/parent/reset-password`.   |
+| `FRONTEND_URL_VERIFY_EMAIL`    | URL to redirect users for email verification. Example: `http://localhost:8000/api/parent/verify-email`. |
 
 ## Commit Message Guidelines
 
 All commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/) specification with a Jira ticket prefix.
 
-**Format:**
+## Author
+
+**Salem Shah**  
+[GitHub](https://github.com/salemshah) | [Email](mailto:salemshahdev@gmail.com)
