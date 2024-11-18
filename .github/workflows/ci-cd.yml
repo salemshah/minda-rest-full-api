@@ -55,42 +55,13 @@ jobs:
           done
 
       - name: Set up Prisma
-        run: |
-          if npm run prisma:generate; then
-            echo "Prisma client generated successfully."
-          else
-            echo "Failed to generate Prisma client."
-            exit 1
-          fi
+        run: npm run prisma:generate
 
       - name: Run Prisma migrations
-        run: |
-          if npm run prisma:migrate:deploy; then
-            echo "Prisma migrations deployed successfully."
-          else
-            echo "Failed to deploy Prisma migrations."
-            exit 1
-          fi
+        run: npm run prisma:migrate:deploy
 
       - name: Validate Prisma Schema
-        run: |
-          if npx prisma validate; then
-            echo "Prisma schema is valid."
-          else
-            echo "Prisma schema validation failed."
-            exit 1
-          fi
-
-      - name: Check Prisma Database Connection
-        run: |
-          if npx prisma db pull; then
-            echo "Prisma successfully connected to PostgreSQL."
-          else
-            echo "Failed to connect Prisma to PostgreSQL."
-            exit 1
-          fi
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: npx prisma validate
 
       - name: Run Linting
         run: npm run lint:ci
@@ -104,7 +75,7 @@ jobs:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
       - name: Upload coverage report
-        if: always() && success()
+        if: success()
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
@@ -132,30 +103,24 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/minda-rest-full-api:latest
 
-      # Start the ssh-agent and add the private key
       - name: Start ssh-agent
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
-      # Create .env.prod on Server
       - name: Create .env on Server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}"
           echo "${{ vars.ENV_PROD_FILE }}" | tr -d '\r' | ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cat > ${{ env.SERVER_DIR }}/.env"
-      
 
-      # Copy docker-compose.prod.yml to Server
       - name: Copy docker-compose.prod.yml to Server
         run: |
           scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/docker-compose.prod.yml
 
-      # Copy Nginx config to Server
       - name: Copy Nginx config to Server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.SERVER_DIR }}/nginx/conf.d"
           scp -o StrictHostKeyChecking=no nginx/conf.d/default.conf ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.SERVER_DIR }}/nginx/conf.d/default.conf
-
 
       - name: Deploy Containers without Certbot
         run: |
@@ -163,46 +128,28 @@ jobs:
           cd ${{ env.SERVER_DIR }}
           docker compose --env-file .env -f docker-compose.prod.yml up -d app db nginx
           EOF
-      #          docker compose exec nginx nginx -s reload
 
+      - name: Initialize Let's Encrypt Certificates
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          ssh -tt -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          cd ${{ env.SERVER_DIR }}
+          sudo apt-get update && sudo apt-get upgrade -y
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans
+          docker compose -f docker-compose.prod.yml run --rm certbot certonly \
+            --webroot \
+            --webroot-path /var/www/certbot/ \
+            --email salemshahdev@gmail.com \
+            --agree-tos \
+            --non-interactive \
+            -d vps99465.serveur-vps.net
+          docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+          EOF
 
-#      - name: Initialize Let's Encrypt Certificates
-#        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-#          DOMAIN_NAME: "minda-app.duckdns.org"
-#        run: |
-#          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-#          cd ${{ env.SERVER_DIR }}
-#          sudo apt-get update && sudo apt-get upgrade -y
-#          docker compose -f docker-compose.prod.yml pull
-#          docker compose -f docker-compose.prod.yml up -d --remove-orphans
-#          docker compose -f docker-compose.prod.yml run --rm certbot certonly \
-#          --webroot \
-#          --webroot-path /var/www/certbot/ \
-#          --email salemshahdev@gmail.com \
-#          --agree-tos \
-#          --non-interactive \
-#          --dry-run \
-#          -d minda-app.duckdns.org
-#          EOF
-#          docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
-
-
-#      - name: Wait for Nginx to be Healthy
-#        run: |
-#          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-#          cd ${{ env.SERVER_DIR }}
-#          while [ "$(docker compose -f docker-compose.prod.yml ps -q nginx | xargs docker inspect -f '{{.State.Health.Status}}')" != "healthy" ]; do
-#            echo "Waiting for Nginx to become healthy..."
-#            sleep 5
-#          done
-#          echo "Nginx is healthy."
-#          EOF
-
-#      - name: Deploy Certbot Service for Renewals
-#        run: |
-#          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-#          cd ${{ env.SERVER_DIR }}
-#          docker compose -f docker-compose.prod.yml up -d certbot
-#          EOF
-
-
+      - name: Deploy Certbot Service for Renewals
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          cd ${{ env.SERVER_DIR }}
+          docker compose --env-file .env -f docker-compose.prod.yml up -d certbot
+          EOF
