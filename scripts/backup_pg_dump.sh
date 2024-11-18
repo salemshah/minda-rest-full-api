@@ -22,8 +22,8 @@ pg_dump -U "${BACKUP_DB_USER}" -h "${BACKUP_DB_HOST}" -p "${BACKUP_DB_PORT}" "${
 # Unset the password variable for security
 unset PGPASSWORD
 
-# Delete backups older than 30 days
-find "${BACKUP_DIR}" -type f -name "${BACKUP_DB_NAME}_backup_*.sql.gz" -mtime +30 -exec rm {} \;
+# Delete backups older than 5 days
+find "${BACKUP_DIR}" -type f -name "${BACKUP_DB_NAME}_backup_*.sql.gz" -mtime +3 -exec rm {} \;
 
 # Log the backup activity
 echo "Logical backup for ${BACKUP_DB_NAME} completed on ${DATE}" >> "${BACKUP_DIR}/backup.log"
