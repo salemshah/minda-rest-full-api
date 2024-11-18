@@ -165,44 +165,40 @@ jobs:
           EOF
       #          docker compose exec nginx nginx -s reload
 
+      - name: Initialize Let's Encrypt Certificates
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          cd ${{ env.SERVER_DIR }}
+          sudo apt-get update && sudo apt-get upgrade -y
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans
+          docker compose -f docker-compose.prod.yml run --rm certbot certonly \
+            --webroot \
+            --webroot-path /var/www/certbot/ \
+            --email salemshahdev@gmail.com \
+            --agree-tos \
+            --non-interactive \
+            -d vps99465.serveur-vps.net
+          EOF
+          docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 
-#      - name: Initialize Let's Encrypt Certificates
-#        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-#          DOMAIN_NAME: "minda-app.duckdns.org"
-#        run: |
-#          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-#          cd ${{ env.SERVER_DIR }}
-#          sudo apt-get update && sudo apt-get upgrade -y
-#          docker compose -f docker-compose.prod.yml pull
-#          docker compose -f docker-compose.prod.yml up -d --remove-orphans
-#          docker compose -f docker-compose.prod.yml run --rm certbot certonly \
-#          --webroot \
-#          --webroot-path /var/www/certbot/ \
-#          --email salemshahdev@gmail.com \
-#          --agree-tos \
-#          --non-interactive \
-#          --dry-run \
-#          -d minda-app.duckdns.org
-#          EOF
-#          docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+      - name: Wait for Nginx to be Healthy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          cd ${{ env.SERVER_DIR }}
+          while [ "$(docker compose -f docker-compose.prod.yml ps -q nginx | xargs docker inspect -f '{{.State.Health.Status}}')" != "healthy" ]; do
+            echo "Waiting for Nginx to become healthy..."
+            sleep 5
+          done
+          echo "Nginx is healthy."
+          EOF
 
-
-#      - name: Wait for Nginx to be Healthy
-#        run: |
-#          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-#          cd ${{ env.SERVER_DIR }}
-#          while [ "$(docker compose -f docker-compose.prod.yml ps -q nginx | xargs docker inspect -f '{{.State.Health.Status}}')" != "healthy" ]; do
-#            echo "Waiting for Nginx to become healthy..."
-#            sleep 5
-#          done
-#          echo "Nginx is healthy."
-#          EOF
-
-#      - name: Deploy Certbot Service for Renewals
-#        run: |
-#          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
-#          cd ${{ env.SERVER_DIR }}
-#          docker compose -f docker-compose.prod.yml up -d certbot
-#          EOF
-
+      - name: Deploy Certbot Service for Renewals
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          cd ${{ env.SERVER_DIR }}
+          docker compose --env-file .env -f docker-compose.prod.yml up -d certbot
+          EOF
+    
 
