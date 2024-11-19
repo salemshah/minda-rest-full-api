@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Repository
         uses: actions/checkout@v3
 
@@ -23,31 +22,26 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
-
       - name: Create Backup Directory on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p ${{ env.BACKUP_DIR }}"
-
 
       - name: Upload Backup Script
         run: |
           scp -o StrictHostKeyChecking=no scripts/backup_pg_dump.sh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ env.BACKUP_DIR }}/backup_pg_dump.sh
 
-
       - name: Set Execute Permissions on Backup Script
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "chmod +x ${{ env.BACKUP_DIR }}/backup_pg_dump.sh"
-
 
       - name: Install Dependencies on VPS
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           sudo apt-get update
-          sudo apt-get install -y postgresql-client gzip cron
+          sudo apt-get install -y postgresql-client gzip cron curl
           sudo systemctl enable cron
           sudo systemctl start cron
           EOF
-
 
       - name: Configure Cron Job for Scheduled Backups
         run: |
