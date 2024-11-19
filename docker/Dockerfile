@@ -20,7 +20,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install netcat and curl for healthchecks
-RUN apk add --no-cache netcat-openbsd curl && curl --version
+RUN apk add --no-cache netcat-openbsd curl
 
 # Copy built application and node_modules from the builder stage
 COPY --from=builder /app/build ./build
