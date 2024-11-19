@@ -2,7 +2,7 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available) and install dependencies
+# Copy package.json and package-lock.json
 COPY package*.json ./
 RUN npm ci
 
@@ -20,7 +20,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install netcat and curl for healthchecks
-RUN apk add --no-cache netcat-openbsd curl
+RUN apk add --no-cache netcat-openbsd curl && curl --version
 
 # Copy built application and node_modules from the builder stage
 COPY --from=builder /app/build ./build
