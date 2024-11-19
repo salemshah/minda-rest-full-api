@@ -19,8 +19,8 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /app
 
-# Install netcat for the wait-for functionality
-RUN apk add --no-cache netcat-openbsd
+# Install netcat and curl for healthchecks
+RUN apk add --no-cache netcat-openbsd curl
 
 # Copy built application and node_modules from the builder stage
 COPY --from=builder /app/build ./build
