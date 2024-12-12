@@ -47,6 +47,20 @@ export class ParentService {
     const verificationToken = uuidv4();
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
+    // Send verification email
+    const verificationLink = `${this.frontendUrlVerifyEmail}?token=${verificationToken}`;
+    const emailContent = `
+            <h1>Welcome to Our Platform, ${firstName}!</h1>
+            <p>Thank you for registering. Please verify your email by clicking the link below:</p>
+            <a href="${verificationLink}">Verify Email</a>
+            <p>If you did not register, please ignore this email.</p>
+        `;
+    await sendEmail({
+      to: email,
+      subject: 'Verify Your Email',
+      html: emailContent,
+    });
+
     const newParent = await prisma.parent.create({
       data: {
         firstName,
@@ -56,21 +70,6 @@ export class ParentService {
         verificationToken,
         verificationTokenExpires,
       },
-    });
-
-    // Send verification email
-    const verificationLink = `${this.frontendUrlVerifyEmail}?token=${verificationToken}`;
-    const emailContent = `
-            <h1>Welcome to Our Platform, ${firstName}!</h1>
-            <p>Thank you for registering. Please verify your email by clicking the link below:</p>
-            <a href="${verificationLink}">Verify Email</a>
-            <p>If you did not register, please ignore this email.</p>
-        `;
-
-    await sendEmail({
-      to: email,
-      subject: 'Verify Your Email',
-      html: emailContent,
     });
 
     return this.getParentData(newParent);
